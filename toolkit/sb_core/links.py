@@ -44,3 +44,22 @@ def link_target_name(value):
     if links:
         return links[0].target or None
     return value.strip() or None
+
+
+def graph(wiki):
+    """Grafo dei link risolti in modo univoco: (uscenti, entranti) per path di pagina."""
+    pages = [p for p in wiki.pages() if p.meta is not None]
+    outgoing = {p.path: set() for p in pages}
+    incoming = {p.path: set() for p in pages}
+    for page in pages:
+        for link in page_links(page):
+            if not link.target:
+                continue
+            _, targets = wiki.lookup(link.target)
+            if len(targets) != 1:
+                continue
+            target = targets[0].path
+            if target != page.path and target in incoming:
+                outgoing[page.path].add(target)
+                incoming[target].add(page.path)
+    return outgoing, incoming

@@ -6,6 +6,7 @@ import sys
 
 from . import FORMAT_VERSION, __version__
 from .errors import SbError, UsageError
+from .index import write_index
 from .validate import validate
 from .wiki import Wiki, find_root
 
@@ -80,4 +81,13 @@ def cmd_validate(args):
     return {"ok": not errors, "checked": checked, "issues": [i.to_dict() for i in issues]}, 1 if errors else 0
 
 
-COMMANDS = [_add_version, _add_validate]
+def _add_index(sub, common):
+    p = sub.add_parser("index", parents=[common], help="rigenera index.md e .sb/backlinks.json")
+    p.set_defaults(handler=cmd_index)
+
+
+def cmd_index(args):
+    return write_index(_wiki(args)), 0
+
+
+COMMANDS = [_add_version, _add_validate, _add_index]
