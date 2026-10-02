@@ -6,6 +6,7 @@ import sys
 
 from . import FORMAT_VERSION, __version__
 from .errors import SbError, UsageError
+from .validate import validate
 from .wiki import Wiki, find_root
 
 
@@ -65,4 +66,18 @@ def _wiki(args):
     return Wiki(args.wiki)
 
 
-COMMANDS = [_add_version]
+def _add_validate(sub, common):
+    p = sub.add_parser("validate", parents=[common], help="valida le pagine contro lo schema")
+    p.add_argument("paths", nargs="*", help="pagine da validare (default: tutte)")
+    p.set_defaults(handler=cmd_validate)
+
+
+def cmd_validate(args):
+    wiki = _wiki(args)
+    issues = validate(wiki, args.paths)
+    errors = [i for i in issues if i.severity == "error"]
+    checked = len(args.paths) if args.paths else len(wiki.pages())
+    return {"ok": not errors, "checked": checked, "issues": [i.to_dict() for i in issues]}, 1 if errors else 0
+
+
+COMMANDS = [_add_version, _add_validate]
