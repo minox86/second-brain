@@ -27,9 +27,10 @@ Leggi `BASE/../../references/conventions.md`, dove BASE è la base directory di 
 
 ## `stop`
 
-1. Leggi il `pid` da `.sb/board.json`. Se il file manca, la board non è attiva: dillo.
-2. `kill -TERM <pid>` (SIGTERM). Il server fa il push finale e rimuove `.sb/board.json`.
-3. Conferma con una riga. Se `.sb/board.json` esiste ancora dopo qualche secondo, dillo all'utente invece di forzare con `kill -9`.
+1. Leggi `pid`, `port` e `url` da `.sb/board.json`. Se il file manca, la board non è attiva: dillo.
+2. Verifica che quel processo sia davvero la board: `curl -s -o /dev/null -w "%{http_code}" -H "X-SB-Token: <token>" "http://127.0.0.1:<port>/api/version"`, con il token preso dall'URL, deve rispondere `200`. Se non risponde, il file è rimasto da una sessione chiusa male e il `pid` può appartenere a un altro processo: **non** inviare segnali, cancella `.sb/board.json` e dillo.
+3. `kill -TERM <pid>` (SIGTERM). Il server fa il push finale e rimuove `.sb/board.json`.
+4. Conferma con una riga. Se `.sb/board.json` esiste ancora dopo qualche secondo, dillo all'utente invece di forzare con `kill -9`.
 
 ## `status`
 

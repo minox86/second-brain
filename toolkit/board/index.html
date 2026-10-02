@@ -504,6 +504,16 @@ select.sel.on{background-color:#E6DCCD}
     t.overdue = !!(t.due && !isClosed(t) && days(t.due) < 0);
   }
 
+  // le modifiche allo stesso task partono una alla volta, ognuna con l'etag restituito dalla precedente
+  var queues = {};
+  var queued = {};
+  function enqueue(path, job) {
+    queued[path] = (queued[path] || 0) + 1;
+    var next = (queues[path] || Promise.resolve()).then(job, job);
+    queues[path] = next.then(function () {}, function () {});
+    return next.then(function (value) { queued[path] -= 1; return value; }, function (err) { queued[path] -= 1; throw err; });
+  }
+
   function patch(path, set, note) {
     var t = find(path);
     if (!t) return Promise.resolve();
@@ -511,15 +521,35 @@ select.sel.on{background-color:#E6DCCD}
     if (set) applyLocal(t, set);
     renderBoard();
     renderPanel(true);
-    return api('PATCH', '/api/tasks', { path: path, etag: before.etag, set: set || {}, note: note || null }).then(function (res) {
-      replaceTask(path, res.task);
-      if (S.selected === path) S.selected = res.task.path;
-      if (S.cursor === path) S.cursor = res.task.path;
-      if (!res.committed && S.snap.sync.git) toast('Salvato, ma il commit è in sospeso');
-    }).catch(function (e) {
-      replaceTask(path, before);
-      toast(e.status === 409 ? 'Il task è stato modificato altrove: ho ricaricato la board' : e.message, true);
-    }).then(load);
+    return enqueue(path, function () {
+      var current = find(path);
+      var etag = current ? current.etag : before.etag;
+      return api('PATCH', '/api/tasks', { path: path, etag: etag, set: set || {}, note: note || null }).then(function (res) {
+        replaceTask(path, res.task);
+        if (S.selected === path) S.selected = res.task.path;
+        if (S.cursor === path) S.cursor = res.task.path;
+        if (!res.committed && S.snap.sync.git) toast('Salvato, ma il commit è in sospeso');
+      }).catch(function (e) {
+        replaceTask(path, before);
+        toast(e.status === 409 ? 'Il task è stato modificato altrove: ho ricaricato la board' : e.message, true);
+      });
+    }).then(function () { if (!queued[path]) return load(); });
+  }
+
+  function validYear(value) { var y = +String(value).slice(0, 4); return y >= 1900 && y <= 2999; }
+
+  // le date si salvano quando il campo perde il focus (o con Invio), non a ogni tasto
+  function commitDate(el) {
+    var value = el.value;
+    if (el.id === 'menu-date') {
+      var target = $('menu').dataset.path;
+      if (value && validYear(value)) { closeMenu(); patch(target, { due: value }); }
+      return;
+    }
+    var t = selectedTask();
+    if (!t || (value || null) === (t.due || null)) return;
+    if (value && !validYear(value)) { el.value = t.due || ''; toast('Data non valida', true); return; }
+    patch(t.path, { due: value || null });
   }
 
   function create(data) {
@@ -698,7 +728,7 @@ select.sel.on{background-color:#E6DCCD}
     if (el.id === 'f-project') { S.project = el.value; el.classList.toggle('on', !!el.value); renderBoard(); return; }
     if (el.id === 'f-person') { S.person = el.value; el.classList.toggle('on', !!el.value); renderBoard(); return; }
     if (el.id === 'f-priority') { S.priority = el.value; el.classList.toggle('on', !!el.value); renderBoard(); return; }
-    if (el.id === 'menu-date') { var p = $('menu').dataset.path; closeMenu(); if (el.value) patch(p, { due: el.value }); return; }
+    if (el.type === 'date') return;  // le date passano da commitDate
     var field = el.dataset.field;
     var t = selectedTask();
     if (!field || !t) return;
@@ -739,8 +769,17 @@ select.sel.on{background-color:#E6DCCD}
     }
   });
 
+  document.addEventListener('focusout', function (e) {
+    if (e.target.id === 'p-due' || e.target.id === 'menu-date') commitDate(e.target);
+  }, true);
+
   document.addEventListener('keydown', function (e) {
     var tag = e.target.tagName;
+    if (e.key === 'Enter' && (e.target.id === 'p-due' || e.target.id === 'menu-date')) {
+      e.preventDefault();
+      e.target.blur();
+      return;
+    }
     var typing = /INPUT|SELECT|TEXTAREA/.test(tag);
     if (e.key === 'Escape') {
       if (!$('menu').hidden) { closeMenu(); return; }

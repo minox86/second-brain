@@ -7,6 +7,7 @@ import signal
 import sys
 import threading
 import traceback
+import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -142,8 +143,22 @@ def running_board(root):
     except ProcessLookupError:
         return None
     except PermissionError:
-        return info
-    return info
+        pass
+    # il pid può essere stato riciclato da un altro processo: la board vera risponde alla sua API
+    return info if _answers(info) else None
+
+
+def _answers(info):
+    url = info.get("url") or ""
+    port, token = info.get("port"), url.split("?t=", 1)[1] if "?t=" in url else ""
+    if not isinstance(port, int) or not token:
+        return False
+    request = urllib.request.Request(f"http://127.0.0.1:{port}/api/version", headers={"X-SB-Token": token})
+    try:
+        with urllib.request.urlopen(request, timeout=1.5) as response:
+            return response.status == 200
+    except (OSError, ValueError):
+        return False
 
 
 def run(board, port=8765, open_browser=True, emit=None):

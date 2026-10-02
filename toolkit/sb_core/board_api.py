@@ -253,7 +253,7 @@ class Board(object):
                 out[key] = value
             elif key == "due":
                 date = parse_date(value)
-                if date is None:
+                if date is None or not 1900 <= date.year <= 2999:
                     raise Invalid("scadenza non valida: usa AAAA-MM-GG")
                 out[key] = date.isoformat()
             elif key == "owner":
@@ -314,8 +314,15 @@ class Board(object):
         append_log(self.root, summary, op="board")
         if not self.git.is_repo():
             return False
-        files = sorted(set(paths) | self.pending_commit | {"index.md", "log.md"})
-        ok, error = self.git.commit(files, f"sb(board): {summary}")
+        own = set(paths) | {"index.md", "log.md"}
+        ok, error = self.git.commit(sorted(own | self.pending_commit), f"sb(board): {summary}")
+        if not ok and self.pending_commit - own:
+            # un file in sospeso non deve bloccare i commit successivi: riprova con i soli file di ora
+            ok, error = self.git.commit(sorted(own), f"sb(board): {summary}")
+            if ok:
+                self.last_commit_error = error
+                self.pusher.mark()
+                return True
         if ok:
             self.pending_commit.clear()
             self.last_commit_error = None

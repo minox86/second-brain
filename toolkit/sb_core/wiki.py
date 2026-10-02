@@ -225,6 +225,7 @@ class Wiki(object):
         by_path, by_stem, by_alias = {}, {}, {}
         for page in self.pages():
             by_path[page.path] = page
+            by_path.setdefault(nfc(page.path), page)
             by_stem.setdefault(norm(page.stem), []).append(page)
             for alias in page.aliases:
                 by_alias.setdefault(norm(alias), []).append(page)
@@ -232,7 +233,7 @@ class Wiki(object):
 
     def page(self, rel):
         self._build_indexes()
-        return self._by_path.get(rel)
+        return self._by_path.get(rel) or (self._by_path.get(nfc(rel)) if isinstance(rel, str) else None)
 
     def identity(self, name):
         """Chiave stabile di un nome: il path della pagina se si risolve in modo univoco, altrimenti il nome normalizzato."""
