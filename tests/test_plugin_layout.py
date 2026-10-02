@@ -41,6 +41,10 @@ class SkillsTest(unittest.TestCase):
                 self.assertIn("references/conventions.md", body)
                 self.assertNotIn("```", body, "le skill usano blocchi indentati, non recinti")
 
+    def test_all_commands_present(self):
+        names = {p.parent.name for p in SKILLS_DIR.glob("*/SKILL.md")}
+        self.assertEqual(names, {"init", "status", "put", "sync", "ask", "prep", "report", "tasks", "lint", "schema"})
+
 
 if __name__ == "__main__":
     unittest.main()
