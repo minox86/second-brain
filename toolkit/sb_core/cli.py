@@ -3,15 +3,18 @@ import argparse
 import datetime
 import json
 import sys
+from collections import Counter
 
 from . import FORMAT_VERSION, __version__
 from .errors import SbError, UsageError
-from .sources import stale_sources
-from .log import append_log
-from .tasks import VIEWS, list_tasks
-from .resolve import resolve
-from .links import link_target_name
 from .index import write_index
+from .links import link_target_name
+from .lint import lint
+from .log import append_log
+from .resolve import resolve
+from .sources import stale_sources
+from .status import status
+from .tasks import VIEWS, list_tasks
 from .validate import validate
 from .wiki import Wiki, find_root
 
@@ -157,4 +160,24 @@ def cmd_log(args):
     return append_log(wiki.root, args.message, args.op), 0
 
 
-COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks, _add_sources, _add_log]
+def _add_lint(sub, common):
+    p = sub.add_parser("lint", parents=[common], help="controlli strutturali della wiki")
+    p.set_defaults(handler=cmd_lint)
+
+
+def cmd_lint(args):
+    issues = lint(_wiki(args), _today(args))
+    summary = dict(sorted(Counter(i.code for i in issues).items()))
+    return {"ok": not issues, "summary": summary, "issues": [i.to_dict() for i in issues]}, 1 if issues else 0
+
+
+def _add_status(sub, common):
+    p = sub.add_parser("status", parents=[common], help="dati del cruscotto")
+    p.set_defaults(handler=cmd_status)
+
+
+def cmd_status(args):
+    return status(_wiki(args), _today(args)), 0
+
+
+COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks, _add_sources, _add_log, _add_lint, _add_status]
