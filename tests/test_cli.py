@@ -2,12 +2,12 @@ import subprocess
 import sys
 import unittest
 
-from helpers import ROOT, run_cli
+from helpers import ROOT, WikiCase, run_cli
 
 import sb_core
 
 
-class CliTest(unittest.TestCase):
+class CliTest(WikiCase):
     def test_version(self):
         code, data, _ = run_cli("version")
         self.assertEqual(code, 0)
@@ -25,6 +25,14 @@ class CliTest(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn('"toolkit"', proc.stdout)
+
+    def test_version_reports_current_wiki(self):
+        root = self.make_wiki()
+        code, data, _ = run_cli("version", "--wiki", root)
+        self.assertEqual(code, 0)
+        self.assertEqual(data["wiki"], str(root.resolve()))
+        code, data, _ = run_cli("version", "--wiki", self.make_wiki(base=False))
+        self.assertIsNone(data["wiki"])
 
 
 if __name__ == "__main__":

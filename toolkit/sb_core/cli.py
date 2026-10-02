@@ -6,6 +6,7 @@ import sys
 
 from . import FORMAT_VERSION, __version__
 from .errors import SbError, UsageError
+from .wiki import Wiki, find_root
 
 
 def main(argv=None):
@@ -53,7 +54,15 @@ def _add_version(sub, common):
 
 
 def cmd_version(args):
-    return {"toolkit": __version__, "format": FORMAT_VERSION}, 0
+    try:
+        root = str(find_root(args.wiki))
+    except SbError:
+        root = None
+    return {"toolkit": __version__, "format": FORMAT_VERSION, "wiki": root}, 0
+
+
+def _wiki(args):
+    return Wiki(args.wiki)
 
 
 COMMANDS = [_add_version]
