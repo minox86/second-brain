@@ -76,7 +76,7 @@ Le skill si invocano come `/sb:<skill>`.
 │   ├── VERSION                # versione del formato
 │   ├── layers.md              # semantica dei layer
 │   ├── sources.md             # registro delle KB esterne
-│   ├── proposals.md           # segnali e proposte di evoluzione dello schema
+│   ├── proposals.md           # proposte di evoluzione: una checklist `- [ ] P<n> · …`
 │   ├── types/<tipo>.md        # un file per tipo
 │   ├── briefings/<tipo>.md    # template dei briefing
 │   └── reports/<tipo>.md      # template dei report
@@ -130,7 +130,8 @@ Corpo in Markdown con [[wikilink]].
 Le affermazioni rilevanti citano la fonte. ^[raw/2026/10/2026-10-02-1on1-luca]
 ```
 
-- **Nome del file** = slug del titolo (`knowledge/people/luca-bianchi.md`). I wikilink usano titolo o alias, come in Obsidian.
+- **Nome del file = titolo** (`knowledge/people/Luca Bianchi.md`), perché Obsidian risolve i wikilink sul nome del file. Di conseguenza i titoli non possono contenere `\ / : * ? " < > | # ^ [ ]` e devono essere unici in tutta la wiki.
+- **Wikilink** sempre verso il titolo canonico: `[[Luca Bianchi]]`. Per mostrare un alias si usa `[[Luca Bianchi|Luca]]`. Un link che punta a un alias viene risolto dal toolkit ma segnalato da validate come non canonico.
 - **Riferimenti esterni** con prefisso: `confluence:<SPACE>/<pageId>`, `jira:<KEY>`, `mail:<id>`, `url:<url>`.
 - **Frontmatter**: sottoinsieme ristretto di YAML (scalari, stringhe tra virgolette, liste inline o a blocco, date ISO, mappe di un livello nei file di schema). Lo legge il parser del toolkit.
 
@@ -155,6 +156,7 @@ Crea una pagina quando… Non crearla quando… Aggiorna la sezione "Note" quand
 
 - Il **frontmatter** serve al toolkit. `kind` ∈ `string | text | date | number | bool | enum | link | list`; `list` accetta `of: <kind>`.
 - La **prosa** serve all'LLM: quando usare il tipo, come strutturare il corpo, cosa escludere.
+- Un campo `status` di tipo `enum` può dichiarare `closed: [...]`, cioè i valori che chiudono l'item. Lint e status lo usano per capire cosa è ancora aperto; il default è `[done, dropped]`.
 - I campi comuni (`type`, `title`, `aliases`, `created`, `updated`, `sources`, `external`, `version`, `synced`, `authority`) sono impliciti per tutti i tipi.
 
 ### 3.4 Task
@@ -169,7 +171,7 @@ status: todo                # todo | doing | blocked | done | dropped
 owner: "[[Luca Bianchi]]"   # assente = l'utente; diverso = delegato da monitorare
 due: 2026-10-09
 priority: high              # low | medium | high
-related: ["[[Migrazione DB]]", "[[2026-10-02 1:1 Luca]]"]
+related: ["[[Migrazione DB]]", "[[2026-10-02 1on1 Luca]]"]
 created: 2026-10-02
 sources: [raw/2026/10/2026-10-02-1on1-luca]
 ---
@@ -195,16 +197,17 @@ Contesto breve e cronologia degli aggiornamenti.
 | Fatti documentati da altri (processi, architetture, policy) | La sorgente esterna |
 | Struttura, collegamenti, sintesi, punto di vista dell'utente, layer operations | La wiki |
 
-**Registro (`schema/sources.md`):**
+**Registro (`schema/sources.md`)**: il frontmatter contiene la mappa `sources` (chiave = id della sorgente), il corpo descrive in prosa a cosa serve ogni sorgente.
 
 ```yaml
+---
 sources:
-  - id: conf-eng
-    system: confluence
-    scope: {space: ENG}
-    covers: [process, system]   # tipi che vivono soprattutto qui
-    stale_after_days: 30
+  conf-eng: {system: confluence, scope: ENG, covers: [process, system], stale_after_days: 30}
+  jira-plat: {system: jira, scope: PLAT, covers: [project], stale_after_days: 14}
+---
 ```
+
+`scope` è il prefisso alfanumerico del riferimento `external`: lo spazio in `confluence:ENG/123`, il progetto in `jira:PLAT-123`. Le source-note `url:` e `mail:` non diventano mai stantie, perché sono catture una tantum. Quelle di sistemi senza un registro corrispondente usano una soglia di 30 giorni.
 
 **Source-note**, tipo `source-note` in `knowledge/sources/`: una per ogni documento esterno ingerito.
 
@@ -254,7 +257,7 @@ Il preset include anche template di briefing (`one-on-one`, `meeting`, `person`,
 
 ## 4. Comandi utente
 
-Ogni comando ha due ingressi equivalenti: lo slash command con argomenti e il linguaggio naturale, che attiva la skill tramite la sua descrizione. Tutti operano sulla wiki della **directory corrente**, riconosciuta dalla presenza di `schema/VERSION` e `CLAUDE.md`. Fuori da una wiki, ogni comando tranne `init` si ferma e propone `/sb:init`.
+Ogni comando ha due ingressi equivalenti: lo slash command con argomenti e il linguaggio naturale, che attiva la skill tramite la sua descrizione. Tutti operano sulla wiki della **directory corrente o di una sua cartella madre**, riconosciuta dalla presenza di `schema/VERSION`. Fuori da una wiki, ogni comando tranne `init` si ferma e propone `/sb:init`.
 
 | Comando | Scopo |
 |---|---|
@@ -284,7 +287,7 @@ Se `path` esiste e non è vuoto, si ferma e chiede.
 Cruscotto di 10–15 righe:
 - task scaduti o in scadenza entro `due_soon_days`;
 - delegati in ritardo;
-- persone con 1:1 senza note da oltre `one_on_one_gap_days` (§3.1);
+- persone con 1:1 senza note da oltre `one_on_one_gap_days` (§3.1), calcolate sulle pagine di tipo `one-on-one` tramite i campi `with` e `date`;
 - sorgenti stantie;
 - proposte di schema pendenti;
 - conteggio delle issue di lint;
@@ -342,14 +345,14 @@ Il re-ingest segue le regole di §3.6.
   - meeting o ricorrenza → briefing di riunione;
   - progetto o team → stato.
 - Il template viene da `schema/briefings/`. Contenuti tipici: stato, task aperti in entrambe le direzioni, temi ricorrenti, impegni presi, novità dalle sorgenti.
-- **Archiviazione automatica** in `outputs/briefings/YYYY-MM-DD-<target>.md` (con frontmatter `type: briefing`, `about`, `for`), poi flusso standard.
+- **Archiviazione automatica** in `outputs/briefings/Briefing YYYY-MM-DD <target>.md` (con frontmatter `type: briefing`, `about`, `for`), poi flusso standard. `briefing` e `report` sono tipi predefiniti del toolkit e non stanno in `schema/types/`.
 
 Esempi: `/sb:prep Luca` · `/sb:prep "weekly platform" --for domani`
 
 ### `/sb:report <tipo> [--scope <entità>] [--period <periodo>]`
 
 - Tipi da `schema/reports/`. Il preset include `week`, `month`, `risks`, `load`, `upward`, `delegated`.
-- **Archiviazione automatica** in `outputs/reports/YYYY-MM-DD-<tipo>[-<scope>].md`, poi flusso standard.
+- **Archiviazione automatica** in `outputs/reports/Report YYYY-MM-DD <tipo>[ <scope>].md` (frontmatter `type: report`, `kind`, `scope`, `period`), poi flusso standard.
 
 Esempi: `/sb:report week` · `/sb:report risks --scope "[[Platform]]"` · `/sb:report upward --period 2026-09`
 
@@ -381,7 +384,7 @@ Esempi: `/sb:report week` · `/sb:report risks --scope "[[Platform]]"` · `/sb:r
 
 ## 5. Toolkit `sb.py`
 
-Python ≥ 3.10, solo standard library, un solo file eseguibile. Ogni comando:
+Python ≥ 3.9 (il Python 3 di macOS Command Line Tools è 3.9), solo standard library. Un solo punto d'ingresso eseguibile, `toolkit/sb.py`, con i moduli nel package `toolkit/sb_core/`. Ogni comando:
 - restituisce **JSON su stdout**;
 - scrive su stderr la diagnostica leggibile;
 - usa codici di uscita `0` (ok), `1` (problemi trovati), `2` (errore d'uso o di ambiente).
@@ -398,7 +401,8 @@ Ogni comando accetta `--wiki <path>`; di default usa la directory corrente.
 | `lint` | Controlli strutturali di §4 `/sb:lint` |
 | `migrate <piano.json>` | Applica una migrazione: sposta file, rinomina o rimappa campi, cambia tipo, riscrive i wikilink; `--dry-run` disponibile |
 | `log <messaggio> [--op <operazione>]` | Aggiunge `- YYYY-MM-DD HH:MM · <op> · <messaggio>` a `log.md` |
-| `scaffold <schema.json> <path>` | Crea la struttura della wiki dallo schema approvato |
+| `scaffold <schema-dir> <path>` | Crea la wiki da una cartella `schema/` approvata (stesso formato di §2, così il preset è già una cartella schema) |
+| `status` | Dati del cruscotto di `/sb:status`: task scaduti e in scadenza, delegati in ritardo, 1:1 oltre soglia, sorgenti stantie, proposte aperte, conteggio lint |
 
 ### Contratto `tasks list --json`
 
@@ -415,7 +419,7 @@ Ogni comando accetta `--wiki <path>`; di default usa la directory corrente.
       "due": "2026-10-09",
       "overdue": false,
       "priority": "high",
-      "related": ["Migrazione DB", "2026-10-02 1:1 Luca"],
+      "related": ["Migrazione DB", "2026-10-02 1on1 Luca"],
       "created": "2026-10-02"
     }
   ]
@@ -448,7 +452,7 @@ I campi assenti nel frontmatter sono `null`, tranne `status`, che di default val
 
 ## 8. Test
 
-- **Toolkit:** unit test con `unittest` su fixture in `tests/fixtures/`. Coprono parser del frontmatter, `validate`, `resolve`, `tasks list` (incluso il contratto JSON), `sources stale`, `lint`, `migrate`, `scaffold`. Sviluppo in TDD.
+- **Toolkit:** unit test con `unittest` su wiki temporanee costruite dai test. Coprono parser del frontmatter, `validate`, `resolve`, `tasks list` (incluso il contratto JSON), `sources stale`, `lint`, `migrate`, `scaffold`. Sviluppo in TDD.
 - **Skill:** wiki di esempio `tests/fixtures/sample-wiki` più scenari di accettazione in `tests/scenarios/`, nella forma "input → aspettative verificabili con il toolkit". Esempio: dopo `/sb:put` di un dettato di 1:1 esiste una pagina `one-on-one` linkata alla persona e almeno un task con `owner` valorizzato; `sb.py validate` esce con `0`. Esecuzione manuale o con `claude -p`.
 
 ## 9. Fuori scope
