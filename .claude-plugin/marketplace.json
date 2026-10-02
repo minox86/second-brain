@@ -1,0 +1,14 @@
+{
+  "name": "second-brain",
+  "description": "Marketplace del plugin Second Brain (sb).",
+  "owner": {
+    "name": "Mattia Minotti"
+  },
+  "plugins": [
+    {
+      "name": "sb",
+      "source": "./",
+      "description": "Second Brain: wiki LLM per il management, gestita da Claude Code."
+    }
+  ]
+}

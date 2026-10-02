@@ -1,0 +1,8 @@
+{
+  "name": "sb",
+  "version": "0.1.0",
+  "description": "Second Brain: Claude Code come pannello di controllo di una wiki LLM per il management (Head of Engineering).",
+  "author": { "name": "Mattia Minotti" },
+  "repository": "https://github.com/minox86/second-brain",
+  "keywords": ["second-brain", "llm-wiki", "obsidian", "management"]
+}
