@@ -6,6 +6,8 @@ import sys
 
 from . import FORMAT_VERSION, __version__
 from .errors import SbError, UsageError
+from .resolve import resolve
+from .links import link_target_name
 from .index import write_index
 from .validate import validate
 from .wiki import Wiki, find_root
@@ -90,4 +92,19 @@ def cmd_index(args):
     return write_index(_wiki(args)), 0
 
 
-COMMANDS = [_add_version, _add_validate, _add_index]
+def _add_resolve(sub, common):
+    p = sub.add_parser("resolve", parents=[common], help="pagine candidate per un nome")
+    p.add_argument("name")
+    p.add_argument("--type", dest="type_name", help="limita a un tipo di pagina")
+    p.add_argument("--limit", type=int, default=5)
+    p.set_defaults(handler=cmd_resolve)
+
+
+def cmd_resolve(args):
+    name = link_target_name(args.name)
+    if not name:
+        raise UsageError("il nome da risolvere è vuoto")
+    return resolve(_wiki(args), name, args.type_name, args.limit), 0
+
+
+COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve]
