@@ -1,0 +1,9 @@
+{
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "alwaysUpdateLinks": true,
+  "userIgnoreFilters": [
+    "raw/",
+    "schema/"
+  ]
+}
