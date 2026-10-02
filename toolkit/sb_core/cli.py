@@ -13,6 +13,7 @@ from .lint import lint
 from .log import append_log
 from .migrate import load_plan, migrate
 from .resolve import resolve
+from .scaffold import scaffold
 from .sources import stale_sources
 from .status import status
 from .tasks import VIEWS, list_tasks
@@ -192,4 +193,15 @@ def cmd_migrate(args):
     return migrate(_wiki(args), load_plan(args.plan), dry_run=args.dry_run), 0
 
 
-COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks, _add_sources, _add_log, _add_lint, _add_status, _add_migrate]
+def _add_scaffold(sub, common):
+    p = sub.add_parser("scaffold", help="crea una nuova wiki da una cartella schema")
+    p.add_argument("schema_dir", help="cartella schema (es. presets/head-of-engineering)")
+    p.add_argument("target", help="cartella della nuova wiki (vuota o con solo .git)")
+    p.set_defaults(handler=cmd_scaffold)
+
+
+def cmd_scaffold(args):
+    return scaffold(args.schema_dir, args.target), 0
+
+
+COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks, _add_sources, _add_log, _add_lint, _add_status, _add_migrate, _add_scaffold]
