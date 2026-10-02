@@ -4,6 +4,7 @@ import unittest
 from helpers import ROOT
 
 import sb_core
+from sb_core.frontmatter import parse
 
 
 class ManifestTest(unittest.TestCase):
@@ -18,6 +19,27 @@ class ManifestTest(unittest.TestCase):
         self.assertEqual(market["name"], "second-brain")
         plugins = {p["name"]: p for p in market["plugins"]}
         self.assertEqual(plugins["sb"]["source"], "./")
+
+
+SKILLS_DIR = ROOT / "skills"
+
+
+class SkillsTest(unittest.TestCase):
+    def test_conventions_exist(self):
+        text = (ROOT / "references" / "conventions.md").read_text(encoding="utf-8")
+        for marker in ("toolkit/sb.py", "Flusso di chiusura", "sb(", "Ambiguità", "proposals.md"):
+            self.assertIn(marker, text)
+
+    def test_skills_are_well_formed(self):
+        files = sorted(SKILLS_DIR.glob("*/SKILL.md"))
+        self.assertTrue(files)
+        for path in files:
+            with self.subTest(skill=path.parent.name):
+                meta, body = parse(path.read_text(encoding="utf-8"))
+                self.assertEqual(meta["name"], path.parent.name)
+                self.assertGreater(len(meta["description"]), 60)
+                self.assertIn("references/conventions.md", body)
+                self.assertNotIn("```", body, "le skill usano blocchi indentati, non recinti")
 
 
 if __name__ == "__main__":
