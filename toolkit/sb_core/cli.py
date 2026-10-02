@@ -6,6 +6,7 @@ import sys
 
 from . import FORMAT_VERSION, __version__
 from .errors import SbError, UsageError
+from .tasks import VIEWS, list_tasks
 from .resolve import resolve
 from .links import link_target_name
 from .index import write_index
@@ -107,4 +108,27 @@ def cmd_resolve(args):
     return resolve(_wiki(args), name, args.type_name, args.limit), 0
 
 
-COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve]
+def _add_tasks(sub, common):
+    p = sub.add_parser("tasks", help="query sui task")
+    tsub = p.add_subparsers(dest="tasks_command", metavar="<azione>")
+    tsub.required = True
+    lp = tsub.add_parser("list", parents=[common], help="task di una vista")
+    lp.add_argument("--view", choices=VIEWS, default="mine")
+    lp.add_argument("--project", help="titolo del progetto in 'related'")
+    lp.add_argument("--person", help="persona come owner o in 'related'")
+    lp.add_argument("--priority", choices=("low", "medium", "high"))
+    lp.add_argument("--json", action="store_true", help="output JSON (sempre attivo)")
+    lp.set_defaults(handler=cmd_tasks_list)
+
+
+def cmd_tasks_list(args):
+    records = list_tasks(
+        _wiki(args), view=args.view,
+        project=link_target_name(args.project), person=link_target_name(args.person),
+        priority=args.priority, today=_today(args),
+    )
+    generated = datetime.datetime.now().isoformat(timespec="seconds")
+    return {"generated": generated, "view": args.view, "tasks": records}, 0
+
+
+COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks]
