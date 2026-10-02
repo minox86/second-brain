@@ -6,6 +6,8 @@ import sys
 
 from . import FORMAT_VERSION, __version__
 from .errors import SbError, UsageError
+from .sources import stale_sources
+from .log import append_log
 from .tasks import VIEWS, list_tasks
 from .resolve import resolve
 from .links import link_target_name
@@ -131,4 +133,28 @@ def cmd_tasks_list(args):
     return {"generated": generated, "view": args.view, "tasks": records}, 0
 
 
-COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks]
+def _add_sources(sub, common):
+    p = sub.add_parser("sources", help="sorgenti esterne")
+    ssub = p.add_subparsers(dest="sources_command", metavar="<azione>")
+    ssub.required = True
+    sp = ssub.add_parser("stale", parents=[common], help="source-note da riallineare")
+    sp.set_defaults(handler=cmd_sources_stale)
+
+
+def cmd_sources_stale(args):
+    return {"stale": stale_sources(_wiki(args), _today(args))}, 0
+
+
+def _add_log(sub, common):
+    p = sub.add_parser("log", parents=[common], help="aggiunge una riga a log.md")
+    p.add_argument("message")
+    p.add_argument("--op", default="note", help="nome dell'operazione (put, sync, …)")
+    p.set_defaults(handler=cmd_log)
+
+
+def cmd_log(args):
+    wiki = _wiki(args)
+    return append_log(wiki.root, args.message, args.op), 0
+
+
+COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks, _add_sources, _add_log]
