@@ -9,6 +9,7 @@ from collections import Counter
 
 from . import FORMAT_VERSION, __version__
 from .board_api import Board
+from .board_server import run as run_board
 from .errors import SbError, UsageError
 from .index import write_index
 from .links import link_target_name
@@ -269,4 +270,16 @@ def cmd_tasks_update(args):
     return _with_push(board, result), 0
 
 
-COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks, _add_sources, _add_log, _add_lint, _add_status, _add_migrate, _add_scaffold]
+def _add_board(sub, common):
+    p = sub.add_parser("board", parents=[common], help="avvia la board dei task nel browser")
+    p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--no-open", action="store_true", help="non aprire il browser")
+    p.set_defaults(handler=cmd_board)
+
+
+def cmd_board(args):
+    board = _board(args)
+    return run_board(board, port=args.port, open_browser=not args.no_open), 0
+
+
+COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks, _add_sources, _add_log, _add_lint, _add_status, _add_migrate, _add_scaffold, _add_board]
