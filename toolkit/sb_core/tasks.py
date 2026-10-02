@@ -47,7 +47,7 @@ def list_tasks(wiki, view="mine", project=None, person=None, priority=None, toda
         if page.meta is None or page.type != "task":
             continue
         record = task_record(page, today, closed)
-        if _in_view(record, view, today, horizon, closed) and _matches(record, project, person, priority):
+        if _in_view(record, view, today, horizon, closed) and _matches(wiki, record, project, person, priority):
             records.append(record)
     records.sort(key=_sort_key)
     return records
@@ -72,17 +72,17 @@ def _in_view(record, view, today, horizon, closed):
     return due is not None and due <= horizon  # week
 
 
-def _matches(record, project, person, priority):
-    related = {norm(r) for r in record["related"]}
+def _matches(wiki, record, project, person, priority):
     if priority and record["priority"] != priority:
         return False
-    if project and norm(project) not in related:
+    related = {wiki.identity(r) for r in record["related"]}
+    if project and wiki.identity(project) not in related:
         return False
     if person:
         people = set(related)
         if record["owner"]:
-            people.add(norm(record["owner"]))
-        if norm(person) not in people:
+            people.add(wiki.identity(record["owner"]))
+        if wiki.identity(person) not in people:
             return False
     return True
 

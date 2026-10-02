@@ -6,7 +6,7 @@ from .links import link_target_name
 from .names import norm
 from .sources import stale_sources
 from .tasks import list_tasks
-from .wiki import parse_date
+from .wiki import closed_statuses, parse_date
 
 _OPEN_PROPOSAL = re.compile(r"^\s*- \[ \] ", re.MULTILINE)
 
@@ -44,7 +44,14 @@ def one_on_one_gaps(wiki, today):
         when = parse_date(page.meta.get("date")) or parse_date(page.meta.get("created"))
         if not person or when is None:
             continue
-        key = norm(person)
+        _, targets = wiki.lookup(person)
+        if len(targets) == 1:
+            target = targets[0]
+            if _has_left(wiki, target):
+                continue
+            key, person = target.path, target.title
+        else:
+            key = norm(person)
         if key not in last or when > last[key][1]:
             last[key] = (person, when)
     gaps = [
@@ -54,6 +61,11 @@ def one_on_one_gaps(wiki, today):
     ]
     gaps.sort(key=lambda g: (-g["days"], norm(g["person"])))
     return gaps
+
+
+def _has_left(wiki, page):
+    status = (page.meta or {}).get("status")
+    return status is not None and status in closed_statuses(wiki.types.get(page.type))
 
 
 def count_open_proposals(wiki):

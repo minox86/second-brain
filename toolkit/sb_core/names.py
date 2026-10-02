@@ -4,9 +4,14 @@ import unicodedata
 FORBIDDEN_TITLE_CHARS = '\\/:*?"<>|#^[]'
 
 
+def nfc(text):
+    """Forma Unicode composta: macOS può restituire nomi file decomposti (NFD)."""
+    return unicodedata.normalize("NFC", text)
+
+
 def norm(name):
     """Confronto case-insensitive con spazi compressi, come fa Obsidian sui nomi file."""
-    return " ".join(str(name).split()).casefold()
+    return " ".join(nfc(str(name)).split()).casefold()
 
 
 def fold(name):

@@ -16,7 +16,7 @@ Leggi `BASE/../../references/conventions.md` (BASE è la base directory di quest
 
 1. Esegui `SB sources stale` per trovare le source-note oltre la soglia o mai sincronizzate.
 2. Scegli l'insieme da verificare in base all'argomento:
-   - `<source-id>`: tutte le source-note il cui `external` appartiene a quella sorgente (stesso sistema e scope; cercale con `grep -rl 'external: "<system>:<SCOPE>' knowledge/sources`);
+   - `<source-id>`: tutte le source-note il cui `external` appartiene a quella sorgente (stesso sistema e scope; cercale con `grep -rlE 'external: "?<system>:<SCOPE>' knowledge/sources`, perché il valore può essere scritto con o senza virgolette);
    - `<pagina>`: `SB resolve "<pagina>" --type source-note`;
    - `--all` o nessun argomento: le stantie del punto 1.
 3. Per ogni candidata leggi via MCP la versione attuale (versione della pagina Confluence, `updated` del ticket Jira) e confrontala con `version`. Classifica ciascuna come:

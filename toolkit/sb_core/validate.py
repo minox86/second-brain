@@ -3,8 +3,8 @@ import re
 from pathlib import Path
 
 from .errors import WikiError
-from .links import find_links
-from .names import norm, title_problem
+from .links import find_links, is_attachment, strip_code
+from .names import nfc, norm, title_problem
 from .wiki import COMMON_FIELDS, parse_date
 
 _LINK_VALUE = re.compile(r"^\[\[[^\[\]]+\]\]$")
@@ -35,11 +35,17 @@ def _relative(wiki, raw):
     path = Path(raw)
     if path.is_absolute():
         try:
-            return path.resolve().relative_to(wiki.root).as_posix()
+            return nfc(path.resolve().relative_to(wiki.root).as_posix())
         except ValueError:
             raise WikiError(f"{raw} è fuori dalla wiki")
+    from_cwd = path.resolve()
+    if from_cwd.is_file():
+        try:
+            return nfc(from_cwd.relative_to(wiki.root).as_posix())
+        except ValueError:
+            pass
     text = path.as_posix()
-    return text[2:] if text.startswith("./") else text
+    return nfc(text[2:] if text.startswith("./") else text)
 
 
 def _select(wiki, paths):
@@ -47,10 +53,10 @@ def _select(wiki, paths):
     if not paths:
         return list(pages)
     wanted = {_relative(wiki, p) for p in paths}
-    unknown = wanted - {p.path for p in pages}
+    unknown = wanted - {nfc(p.path) for p in pages}
     if unknown:
         raise WikiError("pagine non trovate: " + ", ".join(sorted(unknown)))
-    return [p for p in pages if p.path in wanted]
+    return [p for p in pages if nfc(p.path) in wanted]
 
 
 def _duplicate_titles(wiki, selected):
@@ -78,7 +84,10 @@ def validate_page(wiki, page):
     issues = []
     type_name = meta.get("type")
     title = meta.get("title")
-    if not type_name:
+    if type_name is not None and not isinstance(type_name, str):
+        issues.append(Issue(page.path, "bad-value", "'type' deve essere un testo"))
+        type_name = None
+    elif not type_name:
         issues.append(Issue(page.path, "missing-type", "manca il campo 'type'"))
     if title is None:
         issues.append(Issue(page.path, "missing-title", "manca il campo 'title'"))
@@ -86,7 +95,7 @@ def validate_page(wiki, page):
         problem = title_problem(title)
         if problem:
             issues.append(Issue(page.path, "bad-title", problem))
-        elif title != page.stem:
+        elif nfc(title) != page.stem:
             issues.append(Issue(page.path, "filename-mismatch", f"il nome del file deve essere '{title}.md'"))
     typedef = wiki.types.get(type_name) if type_name else None
     if type_name and typedef is None:
@@ -202,10 +211,12 @@ def _check_external(wiki, path, external):
 
 def _check_body_links(wiki, page):
     issues = []
-    for link in find_links(page.body):
+    for link in find_links(strip_code(page.body)):
         if not link.target:
             continue
         match, targets = wiki.lookup(link.target)
+        if not targets and is_attachment(link.target):
+            continue
         if not targets:
             issues.append(Issue(page.path, "broken-link", f"[[{link.target}]] non esiste"))
         elif match == "alias":

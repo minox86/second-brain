@@ -20,7 +20,7 @@ Ogni skill del plugin legge questo file prima di agire. BASE è la *base directo
 | `SB sources stale` | Elenca le source-note da riallineare |
 | `SB lint` | Esegue i controlli strutturali |
 | `SB status` | Raccoglie i dati del cruscotto |
-| `SB migrate <piano.json> [--dry-run]` | Esegue spostamenti, retitle, rinomina e modifica di campi |
+| `SB migrate <piano.json> [--dry-run]` | Esegue spostamenti, retitle, relink, rinomina e modifica di campi; riscrive i link |
 | `SB log "<messaggio>" --op <skill>` | Aggiunge una riga a `log.md` |
 | `SB scaffold <schema-dir> <cartella>` | Crea una nuova wiki |
 

@@ -10,7 +10,8 @@ from pathlib import Path
 from .errors import PlanError
 from .frontmatter import render
 from .links import WIKILINK, parse_link
-from .names import norm, title_problem
+from .names import nfc, norm, title_problem
+from .wiki import PAGE_ROOTS
 
 
 def load_plan(path):
@@ -28,21 +29,30 @@ class _Context(object):
     def __init__(self, wiki):
         self.wiki = wiki
         self.state = {p.path: [dict(p.meta), p.body] for p in wiki.pages() if p.meta is not None}
+        # pagine senza frontmatter leggibile: non si spostano, ma i loro link si riscrivono
+        self.raw = {p.path: p.body for p in wiki.pages() if p.meta is None}
+        self.raw_touched = set()
         self.touched = set()
         self.moves = []
         self.moved_from = set()
 
     def require(self, path, index):
-        if path not in self.state:
+        if not isinstance(path, str) or path not in self.state:
             raise PlanError(f"operazione {index}: pagina '{path}' non trovata o con frontmatter illeggibile")
 
     def check_destination(self, src, dst, index):
         if not isinstance(dst, str) or not dst.endswith(".md") or dst.startswith("/") or ".." in dst.split("/"):
             raise PlanError(f"operazione {index}: la destinazione deve essere un percorso .md relativo alla wiki")
+        if dst.split("/", 1)[0] not in PAGE_ROOTS:
+            raise PlanError(f"operazione {index}: la destinazione deve stare sotto {', '.join(PAGE_ROOTS)}/")
         if dst == src:
             return
         if dst in self.state:
             raise PlanError(f"operazione {index}: '{dst}' esiste già")
+        # macOS è case-insensitive: due percorsi che differiscono solo per maiuscole sono lo stesso file
+        folded = norm(dst)
+        if any(norm(p) == folded for p in list(self.state) + list(self.raw) if p != src):
+            raise PlanError(f"operazione {index}: '{dst}' coincide con una pagina esistente (maiuscole/minuscole)")
         dst_abs, src_abs = self.wiki.root / dst, self.wiki.root / src
         if dst_abs.exists() and dst not in self.moved_from:
             same_file = src_abs.exists() and os.path.samefile(str(src_abs), str(dst_abs))
@@ -79,7 +89,25 @@ def _op_move(ctx, op, index):
     if fields:
         _apply_fields(ctx.state[dst][0], fields, index)
         ctx.touched.add(dst)
-    return [{"op": "move", "path": src, "to": dst}]
+    change = {"op": "move", "path": src, "to": dst}
+    old_stem, new_stem = _stem(src), _stem(dst)
+    if old_stem != new_stem:
+        change["links_rewritten"] = _rewrite_links(ctx, old_stem, new_stem)
+    return [change]
+
+
+def _stem(path):
+    return nfc(path.rsplit("/", 1)[-1][:-3])
+
+
+def _op_relink(ctx, op, index):
+    old, new = op.get("from"), op.get("to")
+    if not (isinstance(old, str) and old.strip() and isinstance(new, str) and new.strip()):
+        raise PlanError(f"operazione {index}: 'from' e 'to' devono essere titoli")
+    problem = title_problem(new)
+    if problem:
+        raise PlanError(f"operazione {index}: 'to' non valido: {problem}")
+    return [{"op": "relink", "from": old, "to": new, "links_rewritten": _rewrite_links(ctx, old, new)}]
 
 
 def _op_retitle(ctx, op, index):
@@ -89,7 +117,7 @@ def _op_retitle(ctx, op, index):
     if problem:
         raise PlanError(f"operazione {index}: titolo non valido: {problem}")
     folder, filename = path.rsplit("/", 1)
-    old_title = filename[:-3]
+    old_title = nfc(filename[:-3])
     new_path = f"{folder}/{new_title}.md"
     ctx.check_destination(path, new_path, index)
     ctx.move(path, new_path)
@@ -135,6 +163,11 @@ def _rewrite_links(ctx, old, new):
         if new_meta != entry[0] or new_body != entry[1]:
             entry[0], entry[1] = new_meta, new_body
             ctx.touched.add(path)
+    for path, text in list(ctx.raw.items()):
+        new_text = rewrite(text)
+        if new_text != text:
+            ctx.raw[path] = new_text
+            ctx.raw_touched.add(path)
     return counter[0]
 
 
@@ -165,7 +198,7 @@ def _op_set(ctx, op, index):
     return [{"op": "set", "path": path, "fields": sorted(fields)}]
 
 
-OPS = {"move": _op_move, "retitle": _op_retitle, "rename_field": _op_rename_field, "set": _op_set}
+OPS = {"move": _op_move, "retitle": _op_retitle, "rename_field": _op_rename_field, "set": _op_set, "relink": _op_relink}
 
 
 def migrate(wiki, ops, dry_run=False):
@@ -180,7 +213,8 @@ def migrate(wiki, ops, dry_run=False):
         changes.extend(OPS[kind](ctx, op, index))
     if not dry_run:
         _apply(ctx)
-    return {"dry_run": dry_run, "changes": changes, "written": [] if dry_run else sorted(ctx.touched)}
+    written = sorted(ctx.touched | ctx.raw_touched)
+    return {"dry_run": dry_run, "changes": changes, "written": [] if dry_run else written}
 
 
 def _apply(ctx):
@@ -192,4 +226,6 @@ def _apply(ctx):
     for path in sorted(ctx.touched):
         meta, body = ctx.state[path]
         (root / path).write_text(render(meta, body), encoding="utf-8")
+    for path in sorted(ctx.raw_touched):
+        (root / path).write_text(ctx.raw[path], encoding="utf-8")
     ctx.wiki.invalidate()

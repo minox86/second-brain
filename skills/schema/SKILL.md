@@ -49,8 +49,11 @@ Registra il tutto come nuova proposta in `schema/proposals.md` e prosegui come `
           {"op": "move", "path": "knowledge/topics/Acme.md", "to": "knowledge/vendors/Acme.md", "set": {"type": "vendor"}},
           {"op": "retitle", "path": "knowledge/people/Luca.md", "title": "Luca Bianchi"},
           {"op": "rename_field", "type": "person", "from": "role", "to": "position"},
-          {"op": "set", "path": "operations/tasks/X.md", "fields": {"priority": "high", "owner": null}}
+          {"op": "set", "path": "operations/tasks/X.md", "fields": {"priority": "high", "owner": null}},
+          {"op": "relink", "from": "Vecchio titolo", "to": "Titolo che resta"}
         ]}
+
+   `move` e `retitle` riscrivono i link quando cambia il nome del file. `relink` sposta i link da un titolo a un altro, per esempio dopo un merge.
 
    Se la proposta tocca solo lo schema e nessuna pagina, salta questo passo e il successivo.
 4. Esegui `SB migrate <piano> --dry-run` e mostra le modifiche. Poi `SB migrate <piano>`.

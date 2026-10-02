@@ -16,6 +16,21 @@ def parse_link(inner):
     return Link(target.strip(), heading.strip() or None, display.strip() or None)
 
 
+_FENCED = re.compile(r"^(`{3,}|~{3,}).*?^\1[ \t]*$", re.MULTILINE | re.DOTALL)
+_INLINE = re.compile(r"`[^`\n]+`")
+_ATTACHMENT = re.compile(r"\.[A-Za-z0-9]{1,5}$")
+
+
+def strip_code(text):
+    """Toglie blocchi di codice e codice inline, dove i [[...]] non sono link."""
+    return _INLINE.sub("", _FENCED.sub("", text or ""))
+
+
+def is_attachment(target):
+    """Target con un'estensione: immagini, PDF e altri allegati (se non è anche una pagina)."""
+    return bool(_ATTACHMENT.search(target))
+
+
 def find_links(text):
     return [parse_link(m.group(1)) for m in WIKILINK.finditer(text or "")]
 
@@ -33,7 +48,7 @@ def links_in_value(value):
 
 def page_links(page):
     """Tutti i wikilink di una pagina: frontmatter + corpo."""
-    return links_in_value(page.meta or {}) + find_links(page.body)
+    return links_in_value(page.meta or {}) + find_links(strip_code(page.body))
 
 
 def link_target_name(value):

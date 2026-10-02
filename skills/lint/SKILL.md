@@ -35,12 +35,13 @@ Solo con `--fix`.
 
 1. **Meccaniche**: applicale subito, tutte in un unico commit.
    - `alias-link`: riscrivi `[[alias]]` come `[[Titolo|alias]]`.
-   - `filename-mismatch` e `wrong-folder`: operazione `move` verso `<folder del tipo>/<title>.md` con `SB migrate`.
+   - `filename-mismatch`: operazione `retitle` con `title` uguale al titolo della pagina, tramite `SB migrate`. Rinomina il file e riscrive i link.
+   - `wrong-folder`: operazione `move` verso `<folder del tipo>/<title>.md` con `SB migrate`.
    - Date non ISO convertibili senza ambiguità.
 
    Poi esegui il flusso standard con `--op lint`.
 2. **Semantiche**: una alla volta. Proponi la correzione e attendi un sì esplicito.
-   - Unire due duplicati è un'operazione distruttiva. Fondi i contenuti nella pagina che resta, poi usa `retitle` o `move` con `SB migrate` per riallineare i link, ed elimina la pagina assorbita con `git rm`. Fai un commit dedicato.
+   - Unire due duplicati è un'operazione distruttiva. Fondi i contenuti nella pagina che resta, aggiungi agli `aliases` il titolo della pagina assorbita ed eliminala con `git rm`. Poi usa l'operazione `relink` (`{"op": "relink", "from": "<titolo assorbito>", "to": "<titolo che resta>"}`) con `SB migrate`, per spostare tutti i link sulla pagina che resta. Fai un commit dedicato.
    - Una contraddizione si risolve con le regole delle sorgenti: sui fatti vince la fonte esterna, le note dell'utente non si toccano.
 3. **Segnali di schema**: registrali in `schema/proposals.md` nel formato delle convenzioni e indica `/sb:schema proposals`.
 

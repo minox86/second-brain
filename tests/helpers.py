@@ -43,7 +43,8 @@ BASE_SCHEMA = {
     ),
     "schema/types/person.md": md(
         "name: person\nlayer: knowledge\nfolder: knowledge/people\n"
-        "fields:\n  role: {kind: string}\n  team: {kind: link, to: team}",
+        "fields:\n  role: {kind: string}\n  team: {kind: link, to: team}\n"
+        "  status: {kind: enum, values: [active, left], closed: [left]}",
         "# Person\n",
     ),
     "schema/types/team.md": md("name: team\nlayer: knowledge\nfolder: knowledge/teams", "# Team\n"),

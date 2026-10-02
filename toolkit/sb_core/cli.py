@@ -3,6 +3,7 @@ import argparse
 import datetime
 import json
 import sys
+import traceback
 from collections import Counter
 
 from . import FORMAT_VERSION, __version__
@@ -29,6 +30,10 @@ def main(argv=None):
     except SbError as exc:
         print(f"sb: {exc}", file=sys.stderr)
         _emit({"error": str(exc)})
+        return 2
+    except Exception as exc:  # errore inatteso: resta nel contratto JSON + exit 2
+        traceback.print_exc(file=sys.stderr)
+        _emit({"error": f"errore interno: {type(exc).__name__}: {exc}"})
         return 2
     _emit(result)
     return code

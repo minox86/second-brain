@@ -59,13 +59,17 @@ def _parse_mapping(src):
             result[key] = parse_value(rest)
             continue
         block = []
-        while i < len(lines) and (not lines[i].strip() or lines[i][0] in " \t"):
+        while i < len(lines) and (not lines[i].strip() or lines[i][0] in " \t" or _is_item(lines[i])):
             stripped = _strip_comment(lines[i]).strip()
             if stripped:
                 block.append((i + 1, stripped))
             i += 1
         result[key] = _parse_block(block)
     return result
+
+
+def _is_item(line):
+    return line.rstrip() == "-" or line.startswith("- ")
 
 
 def _split_key(line, lineno):

@@ -5,7 +5,7 @@ from pathlib import Path
 from . import FORMAT_VERSION
 from .errors import FrontmatterError, WikiError
 from .frontmatter import parse
-from .names import norm
+from .names import nfc, norm
 
 PAGE_ROOTS = ("knowledge", "operations", "outputs")
 LAYER_ORDER = ("knowledge", "operations", "outputs")
@@ -47,11 +47,12 @@ class Page(object):
 
     @property
     def stem(self):
-        return self.path.rsplit("/", 1)[-1][:-3]
+        return nfc(self.path.rsplit("/", 1)[-1][:-3])
 
     @property
     def type(self):
-        return (self.meta or {}).get("type")
+        value = (self.meta or {}).get("type")
+        return value if isinstance(value, str) else None
 
     @property
     def title(self):
@@ -232,6 +233,13 @@ class Wiki(object):
     def page(self, rel):
         self._build_indexes()
         return self._by_path.get(rel)
+
+    def identity(self, name):
+        """Chiave stabile di un nome: il path della pagina se si risolve in modo univoco, altrimenti il nome normalizzato."""
+        if not name:
+            return None
+        _, pages = self.lookup(name)
+        return pages[0].path if len(pages) == 1 else norm(name)
 
     def lookup(self, name):
         """Risolve il target di un wikilink come Obsidian (nome file), poi per alias."""
