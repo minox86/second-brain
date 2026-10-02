@@ -8,6 +8,7 @@ import traceback
 from collections import Counter
 
 from . import FORMAT_VERSION, __version__
+from .board_api import Board
 from .errors import SbError, UsageError
 from .index import write_index
 from .links import link_target_name
@@ -19,7 +20,7 @@ from .scaffold import scaffold
 from .sources import stale_sources
 from .status import status
 from .tasks import VIEWS, list_tasks
-from .validate import validate
+from .validate import _relative, validate
 from .wiki import Wiki, find_root
 
 
@@ -138,6 +139,24 @@ def _add_tasks(sub, common):
     lp.add_argument("--json", action="store_true", help="output JSON (sempre attivo)")
     lp.set_defaults(handler=cmd_tasks_list)
 
+    ap = tsub.add_parser("add", parents=[common], help="crea un task con campi espliciti")
+    ap.add_argument("--title", required=True)
+    ap.add_argument("--status")
+    ap.add_argument("--owner", help="titolo di una pagina person")
+    ap.add_argument("--due", help="AAAA-MM-GG")
+    ap.add_argument("--priority")
+    ap.add_argument("--related", action="append", default=[], help="titolo collegato (ripetibile)")
+    ap.add_argument("--note")
+    ap.set_defaults(handler=cmd_tasks_add)
+
+    up = tsub.add_parser("update", parents=[common], help="modifica un task")
+    up.add_argument("path", help="percorso del task")
+    up.add_argument("--set", dest="sets", action="append", default=[], metavar="CAMPO=VALORE")
+    up.add_argument("--unset", action="append", default=[], metavar="CAMPO")
+    up.add_argument("--note")
+    up.add_argument("--etag", help="rifiuta la modifica se il file è cambiato")
+    up.set_defaults(handler=cmd_tasks_update)
+
 
 def cmd_tasks_list(args):
     records = list_tasks(
@@ -213,6 +232,41 @@ def _add_scaffold(sub, common):
 
 def cmd_scaffold(args):
     return scaffold(args.schema_dir, args.target), 0
+
+
+def _board(args):
+    today = _today(args) if getattr(args, "today", None) else None
+    return Board(_wiki_path(args), today=(lambda: today) if today else None)
+
+
+def _with_push(board, result):
+    pushed = None
+    if result["committed"] and board.git.has_remote():
+        pushed, _ = board.git.push()
+    return dict(result, pushed=pushed)
+
+
+def cmd_tasks_add(args):
+    board = _board(args)
+    data = {"title": args.title, "status": args.status, "owner": args.owner, "due": args.due,
+            "priority": args.priority, "related": args.related, "note": args.note}
+    return _with_push(board, board.create(data)), 0
+
+
+def cmd_tasks_update(args):
+    board = _board(args)
+    changes = {}
+    for item in args.sets:
+        key, sep, value = item.partition("=")
+        if not sep or not key.strip():
+            raise UsageError(f"--set vuole CAMPO=VALORE, non '{item}'")
+        key = key.strip()
+        changes[key] = [v.strip() for v in value.split(",") if v.strip()] if key == "related" else value.strip()
+    for key in args.unset:
+        changes[key.strip()] = None
+    rel = _relative(board.wiki, args.path)
+    result = board.update({"path": rel, "etag": args.etag, "set": changes, "note": args.note})
+    return _with_push(board, result), 0
 
 
 COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks, _add_sources, _add_log, _add_lint, _add_status, _add_migrate, _add_scaffold]
