@@ -22,16 +22,19 @@ Nessun commit.
 
 ## Azioni
 
-- **`add <testo>`**: crea un task con le regole della prosa del tipo `task` e della skill put (passo 5).
-  - Se il testo contiene contesto oltre al titolo, catturalo in `raw/` (`kind: dictation`) e citalo.
-  - Altrimenti lascia `sources` vuoto.
-- **`done <task>` / `drop <task>`**:
-  1. Risolvi con `SB resolve "<task>" --type task`; se è ambiguo, mostra i candidati e chiedi.
-  2. Imposta `status: done` o `dropped` e aggiorna `updated`.
-  3. Accoda al corpo `- AAAA-MM-GG: chiuso`, oppure `- AAAA-MM-GG: abbandonato: <motivo>` se l'utente lo indica.
-- **`update <task> <modifica>`**:
-  1. Risolvi come sopra.
-  2. Applica la modifica descritta in linguaggio naturale: scadenza, priorità, owner, stato (`blocked` con il motivo nel corpo), titolo. Per cambiare titolo usa un'operazione `retitle` con `SB migrate`, così i link restano validi.
-  3. Accoda `- AAAA-MM-GG: <cosa è cambiato>`.
+Le azioni usano i comandi deterministici del toolkit, gli stessi della board. Questi comandi validano, aggiornano l'indice, scrivono il log e fanno commit e push da soli: **non** eseguire il flusso di chiusura delle convenzioni dopo di loro.
 
-Dopo ogni azione esegui il flusso standard con `--op tasks` e conferma in una riga cosa è cambiato.
+- **`add <testo>`**:
+  1. inferisci i campi come indicato nella prosa del tipo `task` e nella skill put, passo 5;
+  2. esegui `SB tasks add --title "<titolo>" [--owner "<persona>"] [--due AAAA-MM-GG] [--priority <valore>] [--status <valore>] [--related "<titolo>"]… [--note "<contesto>"]`;
+  3. se il testo ha un contesto da conservare come fonte, catturalo prima in `raw/` (`kind: dictation`) e citalo nella nota.
+- **`done <task>` / `drop <task>`**:
+  1. risolvi con `SB resolve "<task>" --type task`; se è ambiguo, mostra i candidati e chiedi;
+  2. esegui `SB tasks update "<path>" --set status=done` (oppure `status=dropped`), aggiungendo `--note "chiuso"` o `--note "abbandonato: <motivo>"`.
+- **`update <task> <modifica>`**:
+  1. risolvi come sopra;
+  2. traduci la richiesta in `--set campo=valore` (campi: `title`, `status`, `owner`, `due`, `priority`, `related=A,B`) e `--unset campo`, più `--note "<cosa è cambiato>"`.
+
+  Un cambio di `title` rinomina il file e riscrive i link in automatico.
+
+Se il comando esce con codice 2, mostra il campo `error` del JSON. Per un duplicato, il campo `path` indica il task già esistente. Se la risposta ha `committed: false`, segnala che il commit è in sospeso. Conferma in una riga cosa è cambiato.

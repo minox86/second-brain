@@ -17,12 +17,17 @@ Ogni skill del plugin legge questo file prima di agire. BASE è la *base directo
 | `SB index` | Rigenera `index.md` e `.sb/backlinks.json` |
 | `SB resolve "<nome>" [--type T]` | Trova le pagine candidate per un nome |
 | `SB tasks list --view V [--project P] [--person P] [--priority X]` | Elenca i task (viste: mine, delegated, overdue, today, week, blocked, all) |
+| `SB tasks add --title T [--owner …] [--due …] [--priority …] [--status …] [--related …]… [--note …]` | Crea un task con campi espliciti; valida, logga e fa commit da solo |
+| `SB tasks update <path> [--set campo=valore]… [--unset campo]… [--note …]` | Modifica un task; valida, logga e fa commit da solo |
+| `SB board [--port N] [--no-open]` | Avvia la board dei task nel browser |
 | `SB sources stale` | Elenca le source-note da riallineare |
 | `SB lint` | Esegue i controlli strutturali |
 | `SB status` | Raccoglie i dati del cruscotto |
 | `SB migrate <piano.json> [--dry-run]` | Esegue spostamenti, retitle, relink, rinomina e modifica di campi; riscrive i link |
 | `SB log "<messaggio>" --op <skill>` | Aggiunge una riga a `log.md` |
 | `SB scaffold <schema-dir> <cartella>` | Crea una nuova wiki |
+
+Il path della wiki si risolve così: `--wiki`, poi la variabile `SB_WIKI`, poi la cartella corrente o una sua cartella madre.
 
 ## Prima di scrivere
 

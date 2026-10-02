@@ -32,10 +32,15 @@ Crea (o clona vuota) una cartella per la wiki, aprici Claude Code ed esegui `/sb
 | `/sb:prep <target>` | Briefing per 1:1, riunione, persona, progetto |
 | `/sb:report <tipo>` | Sintesi: settimana, mese, rischi, carico, upward, delegati |
 | `/sb:tasks [vista \| azione]` | Vede e gestisce i task |
+| `/sb:board [stop \| status]` | Board kanban locale nel browser: viste Stato, Priorità, Persone |
 | `/sb:lint [--fix]` | Manutenzione |
 | `/sb:schema [azione]` | Evoluzione dello schema |
 
 Tutti i comandi si attivano anche in linguaggio naturale.
+
+## Board dei task
+
+`/sb:board` (oppure `python3 <plugin>/toolkit/sb.py board` da terminale) apre una board locale su `http://127.0.0.1:8765`. Puoi trascinare le card tra le colonne, chiuderle, creare task in ogni colonna e aprire un pannello di dettaglio. Ogni modifica è validata e committata (`sb(board): …`); il push parte al massimo una volta al minuto e all'arresto. Con `export SB_WIKI=<cartella della wiki>` il comando funziona da qualunque cartella.
 
 ## Sviluppo
 

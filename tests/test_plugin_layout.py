@@ -43,7 +43,18 @@ class SkillsTest(unittest.TestCase):
 
     def test_all_commands_present(self):
         names = {p.parent.name for p in SKILLS_DIR.glob("*/SKILL.md")}
-        self.assertEqual(names, {"init", "status", "put", "sync", "ask", "prep", "report", "tasks", "lint", "schema"})
+        self.assertEqual(names, {"init", "status", "put", "sync", "ask", "prep", "report", "tasks", "lint", "schema",
+                                 "board"})
+
+    def test_tasks_skill_uses_deterministic_commands(self):
+        text = (SKILLS_DIR / "tasks" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("SB tasks add", text)
+        self.assertIn("SB tasks update", text)
+
+    def test_board_skill_controls_the_server(self):
+        text = (SKILLS_DIR / "board" / "SKILL.md").read_text(encoding="utf-8")
+        for marker in ("SB board", ".sb/board.json", "SIGTERM", "run_in_background"):
+            self.assertIn(marker, text)
 
 
 if __name__ == "__main__":
