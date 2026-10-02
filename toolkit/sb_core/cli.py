@@ -2,6 +2,7 @@
 import argparse
 import datetime
 import json
+import os
 import sys
 import traceback
 from collections import Counter
@@ -29,7 +30,7 @@ def main(argv=None):
         result, code = args.handler(args)
     except SbError as exc:
         print(f"sb: {exc}", file=sys.stderr)
-        _emit({"error": str(exc)})
+        _emit(getattr(exc, "payload", None) or {"error": str(exc)})
         return 2
     except Exception as exc:  # errore inatteso: resta nel contratto JSON + exit 2
         traceback.print_exc(file=sys.stderr)
@@ -56,7 +57,8 @@ def _today(args):
 def build_parser():
     parser = argparse.ArgumentParser(prog="sb", description="Toolkit deterministico di Second Brain")
     common = argparse.ArgumentParser(add_help=False)
-    common.add_argument("--wiki", default=".", help="cartella della wiki o una sua sottocartella (default: .)")
+    common.add_argument("--wiki", default=None,
+                        help="cartella della wiki o una sua sottocartella (default: $SB_WIKI, poi .)")
     common.add_argument("--today", help=argparse.SUPPRESS)
     sub = parser.add_subparsers(dest="command", metavar="<comando>")
     sub.required = True
@@ -67,19 +69,23 @@ def build_parser():
 
 def _add_version(sub, common):
     p = sub.add_parser("version", parents=[common], help="versione del toolkit")
-    p.set_defaults(handler=cmd_version)
+    p.set_defaults(handler=lambda args: cmd_version(args))
+
+
+def _wiki_path(args):
+    return getattr(args, "wiki", None) or os.environ.get("SB_WIKI") or "."
 
 
 def cmd_version(args):
     try:
-        root = str(find_root(args.wiki))
+        root = str(find_root(_wiki_path(args)))
     except SbError:
         root = None
     return {"toolkit": __version__, "format": FORMAT_VERSION, "wiki": root}, 0
 
 
 def _wiki(args):
-    return Wiki(args.wiki)
+    return Wiki(_wiki_path(args))
 
 
 def _add_validate(sub, common):
