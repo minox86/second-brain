@@ -8,14 +8,22 @@ import datetime
 import hashlib
 import threading
 
-from .errors import SbError
+from .errors import PlanError, SbError
+from .frontmatter import render, update_text
 from .gitops import Git, PushScheduler
-from .names import norm
+from .index import write_index
+from .links import link_target_name
+from .log import append_log
+from .migrate import migrate
+from .names import norm, title_problem
 from .tasks import list_tasks, task_record
-from .wiki import Wiki, closed_statuses, parse_date
+from .validate import validate
+from .wiki import PAGE_ROOTS, Wiki, closed_statuses, parse_date
 
 DEFAULT_STATUS = ["todo", "doing", "blocked", "done", "dropped"]
 DEFAULT_PRIORITY = ["low", "medium", "high"]
+EDITABLE = ("title", "status", "owner", "due", "priority", "related")
+FIELD_ORDER = ("status", "owner", "due", "priority", "related")
 
 
 class BoardError(SbError):
@@ -46,6 +54,18 @@ def etag_of(data):
 def _iso(value):
     date = parse_date(value)
     return date.isoformat() if date else None
+
+
+def _describe(value):
+    if value is None:
+        return "∅"
+    if isinstance(value, list):
+        return ", ".join(link_target_name(v) or v for v in value) or "∅"
+    return link_target_name(value) or str(value)
+
+
+def _one_line(text):
+    return " ".join(str(text or "").split())
 
 
 class Board(object):
@@ -134,3 +154,173 @@ class Board(object):
         page = wiki.page(rel)
         record = task_record(page, self.today(), closed_statuses(wiki.types["task"]))
         return self._decorate(wiki, record)
+
+    # scrittura
+
+    def create(self, data):
+        with self.lock:
+            wiki = self.refresh()
+            title = _one_line(data.get("title"))
+            problem = title_problem(title)
+            if problem:
+                raise Invalid(f"titolo non valido: {problem}")
+            _, existing = wiki.lookup(title)
+            if existing:
+                raise Conflict(f"esiste già una pagina '{existing[0].title}'", path=existing[0].path)
+            given = {k: data.get(k) for k in FIELD_ORDER if data.get(k) not in (None, "", [])}
+            fields = self._normalize(wiki, given)
+            today = self.today().isoformat()
+            meta = {"type": "task", "title": title}
+            for key in FIELD_ORDER:
+                if fields.get(key) is not None:
+                    meta[key] = fields[key]
+            meta["created"] = today
+            note = _one_line(data.get("note"))
+            body = f"- {today}: {note}\n" if note else ""
+            rel = f"{wiki.types['task'].folder}/{title}.md"
+            path = self.root / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(render(meta, body), encoding="utf-8")
+            errors = self._new_errors(rel, set())
+            if errors:
+                path.unlink()
+                self.refresh()
+                raise Invalid("il task non è valido", issues=errors)
+            committed = self._close([rel], f"{title} → creato")
+            return {"task": self._record(rel), "committed": committed}
+
+    def update(self, data):
+        with self.lock:
+            wiki = self.refresh()
+            rel = data.get("path")
+            page = wiki.page(rel) if isinstance(rel, str) else None
+            if page is None or page.type != "task":
+                raise NotFound(f"task non trovato: {rel}")
+            file = self.root / rel
+            original = file.read_bytes()
+            if data.get("etag") is not None and data["etag"] != etag_of(original):
+                raise Conflict("il task è stato modificato altrove", task=self._record(rel))
+            changes = dict(data.get("set") or {})
+            new_title = changes.pop("title", None)
+            new_title = _one_line(new_title) if new_title is not None else None
+            if new_title == page.title:
+                new_title = None
+            fields = self._normalize(wiki, changes)
+            note = _one_line(data.get("note"))
+            if not fields and not note and not new_title:
+                raise Invalid("nessuna modifica richiesta")
+            if new_title is not None and title_problem(new_title):
+                raise Invalid(f"titolo non valido: {title_problem(new_title)}")
+            before = self._error_keys(wiki, rel)
+            full = new_title is not None
+            backup = self._backup() if full else {rel: original}
+            today = self.today().isoformat()
+            touched = {rel}
+            try:
+                text = update_text(original.decode("utf-8"), dict(fields, updated=today))
+                if note:
+                    text = text.rstrip("\n") + f"\n- {today}: {note}\n"
+                file.write_text(text, encoding="utf-8")
+                if new_title:
+                    result = migrate(self.refresh(), [{"op": "retitle", "path": rel, "title": new_title}])
+                    rel = result["changes"][0]["to"]
+                    touched |= set(result["written"]) | {rel}
+                errors = self._new_errors(rel, before)
+            except PlanError as exc:
+                self._restore(backup, full)
+                raise Invalid(str(exc))
+            if errors:
+                self._restore(backup, full)
+                raise Invalid("la modifica non è valida", issues=errors)
+            committed = self._close(sorted(touched), self._summary(page.title, fields, note, new_title))
+            return {"task": self._record(rel), "committed": committed}
+
+    def _normalize(self, wiki, fields):
+        enums = self.enums(wiki)
+        out = {}
+        for key, value in fields.items():
+            if key not in EDITABLE or key == "title":
+                raise Invalid(f"campo non modificabile: {key}")
+            if value is None or value == "" or value == []:
+                out[key] = None
+            elif key == "status":
+                if value not in enums["status"]:
+                    raise Invalid(f"stato non ammesso: {value} ({', '.join(enums['status'])})")
+                out[key] = value
+            elif key == "priority":
+                if value not in enums["priority"]:
+                    raise Invalid(f"priorità non ammessa: {value} ({', '.join(enums['priority'])})")
+                out[key] = value
+            elif key == "due":
+                date = parse_date(value)
+                if date is None:
+                    raise Invalid("scadenza non valida: usa AAAA-MM-GG")
+                out[key] = date.isoformat()
+            elif key == "owner":
+                out[key] = self._link(wiki, value, "person")
+            else:  # related
+                if not isinstance(value, list):
+                    raise Invalid("'related' deve essere una lista di titoli")
+                out[key] = [self._link(wiki, v) for v in value]
+        return out
+
+    def _link(self, wiki, name, type_name=None):
+        target = link_target_name(name) if isinstance(name, str) else None
+        pages = wiki.lookup(target)[1] if target else []
+        if len(pages) != 1 or (type_name and pages[0].type != type_name):
+            kind = f" di tipo '{type_name}'" if type_name else ""
+            raise Invalid(f"nessuna pagina{kind} con titolo '{name}'")
+        return f"[[{pages[0].stem}]]"
+
+    def _error_keys(self, wiki, rel):
+        return {(i.code, i.message) for i in validate(wiki, [rel]) if i.severity == "error"}
+
+    def _new_errors(self, rel, before):
+        wiki = self.refresh()
+        return [i.to_dict() for i in validate(wiki, [rel])
+                if i.severity == "error" and (i.code, i.message) not in before]
+
+    def _backup(self):
+        files = {}
+        for root_name in PAGE_ROOTS:
+            base = self.root / root_name
+            if base.is_dir():
+                for path in base.rglob("*.md"):
+                    files[path.relative_to(self.root).as_posix()] = path.read_bytes()
+        return files
+
+    def _restore(self, backup, full):
+        if full:
+            for rel in set(self._backup()) - set(backup):
+                (self.root / rel).unlink()
+        for rel, data in backup.items():
+            path = self.root / rel
+            if not path.exists() or path.read_bytes() != data:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(data)
+        self.refresh()
+
+    def _summary(self, title, fields, note, new_title):
+        parts = [f"{k}={_describe(v)}" for k, v in fields.items()]
+        if new_title:
+            parts.append(f"titolo={new_title}")
+        if note:
+            parts.append("nota")
+        return f"{title} → " + ", ".join(parts)
+
+    def _close(self, paths, summary):
+        wiki = self.refresh()
+        write_index(wiki)
+        append_log(self.root, summary, op="board")
+        if not self.git.is_repo():
+            return False
+        files = sorted(set(paths) | self.pending_commit | {"index.md", "log.md"})
+        ok, error = self.git.commit(files, f"sb(board): {summary}")
+        if ok:
+            self.pending_commit.clear()
+            self.last_commit_error = None
+            self.pusher.mark()
+        else:
+            self.pending_commit |= set(paths)
+            self.last_commit_error = error
+        return ok
