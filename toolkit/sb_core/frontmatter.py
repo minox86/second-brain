@@ -296,3 +296,48 @@ def _needs_quotes(text):
     if text[0] in "[]{}\"'#&*!|>%@`,?:-":
         return True
     return any(c in text for c in ",[]{}\n\t") or ": " in text or " #" in text
+
+
+_KEY_LINE = re.compile(r"^([^\s#:-][^:]*):")
+
+
+def update_text(text, changes):
+    """Modifica solo i campi indicati del frontmatter (None li rimuove); il resto resta identico."""
+    fm, body = split(text)
+    if fm is None:
+        fresh = {k: v for k, v in changes.items() if v is not None}
+        return render(fresh, body) if fresh else body
+    lines = fm.split("\n") if fm else []
+    for key, value in changes.items():
+        new_lines = [] if value is None else dump({key: value}).rstrip("\n").split("\n")
+        spans = _key_spans(lines)
+        if key in spans:
+            start, end = spans[key]
+            lines[start:end] = new_lines
+        elif value is not None:
+            insert_at = len(lines)
+            while insert_at > 0 and not lines[insert_at - 1].strip():
+                insert_at -= 1
+            lines[insert_at:insert_at] = new_lines
+    inner = "\n".join(lines) + "\n" if lines else ""
+    return "---\n" + inner + "---\n" + body
+
+
+def _key_spans(lines):
+    """Per ogni chiave di primo livello: (prima riga, riga dopo l'ultima) del suo valore."""
+    spans = {}
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        match = None
+        if line and line[0] not in " \t#" and not _is_item(line):
+            match = _KEY_LINE.match(line)
+        if not match:
+            i += 1
+            continue
+        start = i
+        i += 1
+        while i < len(lines) and lines[i].strip() and (lines[i][0] in " \t" or _is_item(lines[i])):
+            i += 1
+        spans[match.group(1).strip()] = (start, i)
+    return spans
