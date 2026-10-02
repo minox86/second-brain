@@ -89,3 +89,35 @@ class WikiCase(unittest.TestCase):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content, encoding="utf-8")
         return tmp
+
+
+import subprocess
+
+
+def git(root, *args):
+    """Esegue git nella cartella indicata e ritorna stdout; fallisce se git fallisce."""
+    return subprocess.run(["git", *[str(a) for a in args]], cwd=str(root),
+                          capture_output=True, text=True, check=True).stdout
+
+
+def _make_git_wiki(self, files=None):
+    root = self.make_wiki(files)
+    git(root, "init", "-q", "-b", "main")
+    git(root, "config", "user.name", "Test")
+    git(root, "config", "user.email", "test@example.com")
+    git(root, "config", "commit.gpgsign", "false")
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "init")
+    return root
+
+
+def _add_bare_remote(self, root):
+    remote = Path(tempfile.mkdtemp(prefix="sb-remote-"))
+    self.addCleanup(shutil.rmtree, str(remote), True)
+    git(remote, "init", "-q", "--bare")
+    git(root, "remote", "add", "origin", remote)
+    return remote
+
+
+WikiCase.make_git_wiki = _make_git_wiki
+WikiCase.add_bare_remote = _add_bare_remote
