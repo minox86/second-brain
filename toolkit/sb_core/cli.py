@@ -11,6 +11,7 @@ from .index import write_index
 from .links import link_target_name
 from .lint import lint
 from .log import append_log
+from .migrate import load_plan, migrate
 from .resolve import resolve
 from .sources import stale_sources
 from .status import status
@@ -180,4 +181,15 @@ def cmd_status(args):
     return status(_wiki(args), _today(args)), 0
 
 
-COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks, _add_sources, _add_log, _add_lint, _add_status]
+def _add_migrate(sub, common):
+    p = sub.add_parser("migrate", parents=[common], help="applica un piano di migrazione JSON")
+    p.add_argument("plan", help="file JSON con {\"ops\": [...]}")
+    p.add_argument("--dry-run", action="store_true", help="mostra le modifiche senza scrivere")
+    p.set_defaults(handler=cmd_migrate)
+
+
+def cmd_migrate(args):
+    return migrate(_wiki(args), load_plan(args.plan), dry_run=args.dry_run), 0
+
+
+COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks, _add_sources, _add_log, _add_lint, _add_status, _add_migrate]
