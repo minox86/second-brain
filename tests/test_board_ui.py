@@ -40,6 +40,10 @@ class BoardUiTest(unittest.TestCase):
         self.assertIn("min-width:0", self.css_rule(".col"))
         self.assertIn("flex-wrap:nowrap", self.css_rule(".meta"))
 
+    def test_cards_never_shrink_below_their_content(self):
+        # con overflow:hidden un elemento flex in colonna può schiacciarsi a 0: la lane deve scorrere
+        self.assertIn("flex-shrink:0", self.css_rule(".card"))
+
     def test_long_labels_are_truncated(self):
         chip = self.css_rule(".chip")
         for prop in ("overflow:hidden", "text-overflow:ellipsis", "white-space:nowrap"):

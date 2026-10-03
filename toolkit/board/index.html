@@ -72,7 +72,7 @@ select.sel.on{background-color:#E6DCCD}
 .lane{display:flex;flex-direction:column;gap:6px;padding:0 6px 8px;overflow-y:auto;overflow-x:hidden;min-height:0}
 .lane::-webkit-scrollbar{width:6px}.lane::-webkit-scrollbar-thumb{background:#D8CBB8;border-radius:3px}
 .empty{padding:14px 8px;border:1px dashed #D3C6B3;border-radius:6px;color:var(--ink2);text-align:center}
-.card{position:relative;display:flex;flex-direction:column;gap:7px;padding:9px 10px;min-width:0;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 1px 0 rgba(74,52,30,.05);transition:border-color .12s}
+.card{position:relative;flex-shrink:0;display:flex;flex-direction:column;gap:7px;padding:9px 10px;min-width:0;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 1px 0 rgba(74,52,30,.05);transition:border-color .12s}
 .card:hover{border-color:var(--line2)}
 .card.closed{background:var(--card-closed)}
 .card.p-high::before,.card.p-medium::before,.card.p-low::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
