@@ -23,7 +23,7 @@ class BoardUiTest(unittest.TestCase):
 
     def test_views_quick_add_and_panel(self):
         for marker in ('data-view="status"', 'data-view="priority"', 'data-view="people"', "Aggiungi task",
-                       "draggable", "Aggiungi nota", "Comando per Claude", "Mostra chiusi", "Nuovo task"):
+                       "draggable", "Aggiungi nota", "Comando per Claude", "Nuovo task"):
             self.assertIn(marker, self.text)
 
     def test_palette(self):
@@ -35,9 +35,12 @@ class BoardUiTest(unittest.TestCase):
         self.assertIsNotNone(match, selector)
         return match.group(1)
 
-    def test_board_never_scrolls_horizontally(self):
-        self.assertNotIn("overflow-x", self.css_rule(".board"))
-        self.assertIn("min-width:0", self.css_rule(".col"))
+    def test_three_to_five_columns_fill_the_width(self):
+        # più di 5 colonne scorrono, meno di 3 restano larghe un terzo
+        self.assertIn("overflow-x:auto", self.css_rule(".board"))
+        col = self.css_rule(".col")
+        for prop in ("flex:1 0 0", "min-width:calc((100% - 40px) / 5)", "max-width:calc((100% - 20px) / 3)"):
+            self.assertIn(prop, col)
         self.assertIn("flex-wrap:nowrap", self.css_rule(".meta"))
 
     def test_cards_never_shrink_below_their_content(self):
@@ -58,6 +61,18 @@ class BoardUiTest(unittest.TestCase):
         self.assertNotIn(".card.p-high::before", self.text)
         self.assertIn("font-size:14px", self.css_rule(".ttl"))
 
+    def test_has_inline_favicon(self):
+        # inline: il browser non chiede /favicon.ico al server della board
+        self.assertIn('<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,', self.text)
+
+    def test_no_show_closed_toggle(self):
+        self.assertNotIn("Mostra chiusi", self.text)
+        self.assertNotIn("showClosed", self.text)
+
+    def test_sorting_by_view(self):
+        self.assertIn("if (S.view === 'priority') {\n      var projects = ", self.text)
+        self.assertIn("return rank(a.priority) - rank(b.priority) || byDue(a, b)", self.text)
+
     def test_closed_cards_are_not_struck_through(self):
         self.assertNotIn("line-through", self.text)
 
@@ -67,6 +82,16 @@ class BoardUiTest(unittest.TestCase):
 
     def test_undo_with_ctrl_z(self):
         for marker in ("function undo()", "history.push(entry)", "e.key.toLowerCase() === 'z'", "patch(h.path, h.set, null, true)"):
+            self.assertIn(marker, self.text)
+
+    def test_title_is_editable_inline(self):
+        for marker in ('class="ttl-edit"', 'data-action="edit-title"', "function commitTitle(", "function startEdit(",
+                       "case 'edit-title':"):
+            self.assertIn(marker, self.text)
+        self.assertNotIn("'dblclick'", self.text)
+
+    def test_quick_add_has_priority_project_and_person(self):
+        for marker in ('id="qadd-prio"', 'id="qadd-project"', 'id="qadd-owner"', "function quickAddFields("):
             self.assertIn(marker, self.text)
 
     @unittest.skipUnless(shutil.which("node"), "node non disponibile")

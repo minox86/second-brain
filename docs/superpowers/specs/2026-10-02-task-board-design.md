@@ -73,7 +73,6 @@ Riferimento visivo: la tavola, look "carta e terracotta".
   - selettore di vista;
   - ricerca;
   - filtri Progetto, Persona, Priorità;
-  - interruttore "Mostra chiusi";
   - indicatore di sync;
   - pulsante **Nuovo**.
 - **Riga di sintesi:** aperti, scaduti, delegati.
@@ -88,8 +87,9 @@ Riferimento visivo: la tavola, look "carta e terracotta".
 | **Priorità** (`2`) | i valori di `priority` dello schema, più "Senza priorità" | `priority` (Senza priorità = rimuove il campo) |
 | **Persone** (`3`) | "Io", più una colonna per ogni owner con task aperti | `owner` ("Io" = rimuove l'owner) |
 
-- I task chiusi sono nascosti nelle viste Priorità e Persone, salvo "Mostra chiusi".
-- Ordine dentro una colonna: prima per scadenza (quelli senza data in fondo), poi per titolo. Non si riordina a mano.
+- I task chiusi sono nascosti nelle viste Priorità e Persone.
+- Ordine dentro una colonna: nelle viste Stato e Persone per priorità, poi scadenza (quelli senza data in fondo), poi titolo; nella vista Priorità per progetto (quelli senza progetto in fondo), poi scadenza e titolo. Non si riordina a mano.
+- Larghezza: su desktop da 3 a 5 colonne riempiono la larghezza; con meno colonne ognuna è larga un terzo; oltre 5 la board scorre in orizzontale.
 - Le colonne di Stato e Priorità seguono gli enum dello schema. Le etichette italiane sono note per i valori del preset; per gli altri valori si usa il valore stesso.
 
 ### 3.3 Card
