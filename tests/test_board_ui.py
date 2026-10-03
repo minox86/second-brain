@@ -30,6 +30,26 @@ class BoardUiTest(unittest.TestCase):
         for color in ("#F2ECE3", "#F6F1EA", "#FBF8F3", "#A2461E", "#ECE4D8", "#EFE3CC", "#F1DED4", "#E5E5D4", "#E8E3DB"):
             self.assertIn(color, self.text)
 
+    def css_rule(self, selector):
+        match = re.search(re.escape(selector) + r"\{([^}]*)\}", self.text)
+        self.assertIsNotNone(match, selector)
+        return match.group(1)
+
+    def test_board_never_scrolls_horizontally(self):
+        self.assertNotIn("overflow-x", self.css_rule(".board"))
+        self.assertIn("min-width:0", self.css_rule(".col"))
+        self.assertIn("flex-wrap:nowrap", self.css_rule(".meta"))
+
+    def test_long_labels_are_truncated(self):
+        chip = self.css_rule(".chip")
+        for prop in ("overflow:hidden", "text-overflow:ellipsis", "white-space:nowrap"):
+            self.assertIn(prop, chip)
+        self.assertIn("-webkit-line-clamp:3", self.css_rule(".ttl"))
+
+    def test_priority_is_prominent_outside_the_priority_view(self):
+        self.assertIn(".card.p-high::before", self.text)
+        self.assertIn("var showPrio = S.view !== 'priority';", self.text)
+
     @unittest.skipUnless(shutil.which("node"), "node non disponibile")
     def test_script_parses(self):
         script = re.search(r"<script>(.*?)</script>", self.text, re.S).group(1)
