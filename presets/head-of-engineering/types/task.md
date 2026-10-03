@@ -3,7 +3,7 @@ name: task
 layer: operations
 folder: operations/tasks
 fields:
-  status: {kind: enum, values: [todo, doing, blocked, done, dropped], closed: [done, dropped]}
+  status: {kind: enum, values: [todo, blocked, done, dropped], closed: [done, dropped]}
   owner: {kind: link, to: person}
   due: {kind: date}
   priority: {kind: enum, values: [low, medium, high]}
@@ -26,5 +26,5 @@ Regole per i campi, tutti opzionali e da inferire solo con ragionevole sicurezza
 - `owner`: solo se l'azione è di un'altra persona. Senza owner il task è dell'utente: non mettere mai l'utente come owner.
 - `due`: data assoluta, calcolata rispetto alla data dell'evento d'origine.
 - `priority`: solo con segnali espliciti (urgente, bloccante = high; quando puoi = low).
-- `status`: `todo` di default; `doing` e `blocked` solo se dichiarati.
+- `status`: `todo` di default; `blocked` solo se dichiarato.
 - `related`: evento d'origine ed entità coinvolte.

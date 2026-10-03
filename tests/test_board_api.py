@@ -38,7 +38,7 @@ class SnapshotTest(WikiCase):
         self.assertEqual(snap["today"], "2026-10-02")
         self.assertEqual(snap["thresholds"]["due_soon_days"], 7)
         self.assertEqual(snap["enums"], {
-            "status": ["todo", "doing", "blocked", "done", "dropped"],
+            "status": ["todo", "blocked", "done", "dropped"],
             "priority": ["low", "medium", "high"],
             "closed": ["done", "dropped"],
         })
@@ -163,8 +163,8 @@ class UpdateTest(WikiCase):
     def test_works_without_git(self):
         root = self.make_wiki(FILES)
         board = Board(root, today=lambda: TODAY)
-        result = board.update({"path": T, "etag": etag_of((root / T).read_bytes()), "set": {"status": "doing"}})
-        self.assertEqual((result["committed"], result["task"]["status"]), (False, "doing"))
+        result = board.update({"path": T, "etag": etag_of((root / T).read_bytes()), "set": {"status": "blocked"}})
+        self.assertEqual((result["committed"], result["task"]["status"]), (False, "blocked"))
         self.assertEqual(board.pending_commit, set())
 
 
@@ -174,7 +174,7 @@ class CreateTest(WikiCase):
         self.board = Board(self.root, today=lambda: TODAY)
 
     def test_create_with_all_fields(self):
-        result = self.board.create({"title": "Riunione con Nicolò", "status": "doing", "priority": "high",
+        result = self.board.create({"title": "Riunione con Nicolò", "status": "blocked", "priority": "high",
                                     "owner": "Luca", "related": ["Migrazione DB"], "due": "2026-10-10",
                                     "note": "dalla board"})
         rel = "operations/tasks/Riunione con Nicolò.md"

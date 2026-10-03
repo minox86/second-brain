@@ -75,17 +75,30 @@ select.sel.on{background-color:#E6DCCD}
 .card{position:relative;flex-shrink:0;display:flex;flex-direction:column;gap:7px;padding:9px 10px;min-width:0;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 1px 0 rgba(74,52,30,.05);transition:border-color .12s}
 .card:hover{border-color:var(--line2)}
 .card.closed{background:var(--card-closed)}
-.card.p-high::before,.card.p-medium::before,.card.p-low::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
-.card.p-high::before{background:#A2461E}
-.card.p-medium::before{background:#C2853A}
-.card.p-low::before{background:#CDBFAB}
-.card.p-high,.card.p-medium,.card.p-low{padding-top:11px}
 .card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
 .card.cur{outline:2px solid var(--line2);outline-offset:1px}
 .card.dragging{opacity:.45}
-.ttl{all:unset;cursor:pointer;padding-right:4px;font-size:12.5px;font-weight:500;line-height:1.35;text-wrap:pretty;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:anywhere}
-.ttl.strong{font-weight:600}
-.card.closed .ttl{color:#7A6D60;text-decoration:line-through;text-decoration-color:#B8A894}
+.ttl{all:unset;cursor:pointer;font-size:14px;font-weight:600;letter-spacing:-.01em;line-height:1.3;text-wrap:pretty;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:anywhere}
+.row1{display:flex;align-items:center;gap:8px;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;height:20px;padding:0 7px 0 6px;border-radius:10px;border:1px solid transparent;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.pill .pdot{width:6px;height:6px;border-radius:3px;flex-shrink:0}
+.pill.high{background:#F1D9CB;border-color:#F1D9CB;color:#7E2E10}.pill.high .pdot{background:#A2461E}
+.pill.medium{background:#F0E2C6;border-color:#F0E2C6;color:#634612}.pill.medium .pdot{background:#C2853A}
+.pill.low{background:#E6DFD5;border-color:#E6DFD5;color:#4F453B}.pill.low .pdot{background:#9C8B76}
+.pill.none{background:transparent;border:1px dashed #CDBFAB;color:var(--ink2)}.pill.none .pdot{background:#CDBFAB}
+.pill:hover{filter:brightness(.97)}
+.stream{display:flex;align-items:center;gap:5px;min-width:0;font-size:11.5px;font-weight:500;color:#4E4339}
+.stream .sq{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.stream .lbl,.person .lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.check{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:20px;height:20px;padding:0;border-radius:5px;border:1.5px solid #B9AA95;background:#FFFDF9;color:transparent}
+.check:hover{border-color:#6F7F4E;color:#B9C4A4}
+.card.closed .check{background:#6F7F4E;border-color:#6F7F4E;color:#FBF8F3}
+.person{display:flex;align-items:center;gap:5px;min-width:0;font-size:11.5px;color:#4E4339}
+.duebtn{border:0;cursor:pointer;background:transparent;font-family:var(--mono)}
+.duebtn.empty{display:inline-flex;align-items:center;justify-content:center;width:22px;height:20px;padding:0;border-radius:4px;background:transparent;color:#B9AA95}
+.duebtn.empty:hover{color:var(--ink2);background:rgba(74,52,30,.06)}
+.card.closed .meta,.card.closed .row1 .stream{opacity:.7}
+.card.closed .ttl{color:var(--ink2)}
 .ttl:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
 .meta{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0}
 .chip{padding:1px 6px;border-radius:4px;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
@@ -93,21 +106,11 @@ select.sel.on{background-color:#E6DCCD}
 .chip.date{font-family:var(--mono);color:var(--ink2);flex-shrink:0}
 .chip.date.late{background:#F1D9CB;color:#8A3313}
 .chip.date.soon{background:#F0E2C6;color:#6F4E0F}
-.chip.prio{display:inline-flex;align-items:center;gap:3px;font-weight:600;flex-shrink:0.5}
-.chip.prio svg{flex-shrink:0}
-.chip.prio.high{background:#E9C3B1;color:#7E2E10}
-.chip.prio.medium{background:#E8D3AE;color:#634612}
-.chip.prio.low{background:#E1D8CC;color:#554B41}
 .chip.rel{background:#F1EBE2;border:1px solid #E5DACA;color:#5A4E43;flex-shrink:3}
 .chip.removable{display:inline-flex;align-items:center;gap:3px;padding-right:2px;max-width:100%}
 .chip.removable button{flex-shrink:0}
 .chip.removable button{display:inline-flex;border:0;background:transparent;color:var(--ink2);padding:1px;border-radius:3px}
-.avatar{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:10px;background:#DCCBB6;color:#4E3D2F;font-size:9px;font-weight:600;letter-spacing:.02em}
-.qa{position:absolute;top:6px;right:6px;display:flex;gap:2px;padding:2px;background:var(--card);border:1px solid var(--line);border-radius:6px;opacity:0;transition:opacity .12s}
-.card:hover .qa,.card:focus-within .qa{opacity:1}
-.qa button{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border:0;border-radius:4px;background:transparent;color:var(--ink2)}
-.qa button:first-child{color:var(--accent)}
-.qa button:hover{background:rgba(74,52,30,.07)}
+.avatar{flex-shrink:0;display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:9px;background:#DCCBB6;color:#4E3D2F;font-size:9px;font-weight:600;letter-spacing:.02em}
 .addrow{display:flex;align-items:center;gap:6px;height:28px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--ink2);text-align:left}
 .addrow:hover{background:rgba(74,52,30,.05);color:var(--ink)}
 .qadd{display:flex;flex-direction:column;gap:6px;padding:8px;background:var(--card);border:1px solid var(--accent);border-radius:6px;box-shadow:0 0 0 2px var(--accent-soft)}
@@ -192,12 +195,12 @@ select.sel.on{background-color:#E6DCCD}
   'use strict';
   var TOKEN = new URLSearchParams(location.search).get('t') || '';
   var LABEL = {
-    status: { todo: 'Da fare', doing: 'In corso', blocked: 'Bloccati', done: 'Fatti', dropped: 'Abbandonati' },
-    statusOne: { todo: 'Da fare', doing: 'In corso', blocked: 'Bloccato', done: 'Fatto', dropped: 'Abbandonato' },
+    status: { todo: 'Da fare', blocked: 'Bloccati', done: 'Fatti', dropped: 'Abbandonati' },
+    statusOne: { todo: 'Da fare', blocked: 'Bloccato', done: 'Fatto', dropped: 'Abbandonato' },
     priority: { high: 'Alta', medium: 'Media', low: 'Bassa' }
   };
   var PRIO_RANK = { high: 0, medium: 1, low: 2 };
-  var STATUS_TINT = { todo: 'sand', doing: 'ochre', blocked: 'clay', done: 'sage' };
+  var STATUS_TINT = { todo: 'sand', blocked: 'clay', done: 'sage' };
   var PRIO_TINT = { high: 'clay', medium: 'ochre', low: 'sand' };
   var PEOPLE_TINTS = ['sand', 'ochre', 'sage', 'stone'];
   var DOT = { sand: '#B9AA95', ochre: '#C2853A', clay: '#A2461E', sage: '#8A9A5B', stone: '#C9BBA6' };
@@ -210,7 +213,6 @@ select.sel.on{background-color:#E6DCCD}
     plus: SVG.replace('stroke-width="2"', 'stroke-width="2.2"') + '<path d="M12 5v14M5 12h14"/></svg>',
     x: SVG + '<path d="M6 6l12 12M18 6 6 18"/></svg>',
     xs: '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
-    flagFill: '<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5 22V3h13l-2.5 4.5L18 12H7v10z"/></svg>',
     copy: SVG + '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>'
   };
 
@@ -308,35 +310,53 @@ select.sel.on{background-color:#E6DCCD}
   }
 
   // render
+  var STREAM_COLORS = ['#B9862F', '#6F7F4E', '#8E6A7E', '#5E7F86', '#7D6F62', '#9A5B3F'];
+  function streamOf(t) {
+    var related = t.related || [];
+    var projects = S.snap.projects.map(function (p) { return p.title; });
+    var people = S.snap.people.map(function (p) { return p.title; });
+    return related.filter(function (r) { return projects.indexOf(r) >= 0; })[0] ||
+      related.filter(function (r) { return people.indexOf(r) < 0 && r !== t.owner; })[0] || null;
+  }
+  function streamColor(name) {
+    var h = 0;
+    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return STREAM_COLORS[h % STREAM_COLORS.length];
+  }
+
   function cardHtml(t) {
     var closed = isClosed(t);
     var soon = S.snap.thresholds.due_soon_days;
     var due = '';
+    var label = '';
     if (t.due) {
       var d = days(t.due);
       var tone = !closed && d < 0 ? ' late' : (!closed && d <= soon ? ' soon' : '');
-      var label = !closed && d < 0 ? 'Scaduto · ' + short(t.due) : (!closed && d === 0 ? 'Oggi' : short(t.due));
+      label = !closed && d < 0 ? 'Scaduto · ' + short(t.due) : (!closed && d === 0 ? 'Oggi' : short(t.due));
       due = '<span class="chip date' + tone + '">' + esc(label) + '</span>';
     }
-    var showPrio = S.view !== 'priority';
-    var prioLabel = t.priority ? (LABEL.priority[t.priority] || t.priority) : '';
-    var prio = showPrio && t.priority
-      ? '<span class="chip prio ' + esc(t.priority) + '" title="Priorità ' + esc(prioLabel.toLowerCase()) + '">' + ICON.flagFill +
-        '<span class="lbl">' + esc(prioLabel) + '</span></span>'
+    var pk = t.priority && LABEL.priority[t.priority] ? t.priority : (t.priority ? 'low' : 'none');
+    var pText = t.priority ? (LABEL.priority[t.priority] || t.priority) : 'Priorità';
+    var pill = '<button type="button" class="pill ' + pk + '" data-action="prio-cycle" title="Cambia priorità" aria-label="Priorità: ' +
+      esc(t.priority ? pText.toLowerCase() : 'nessuna') + '. Cambia">' + '<span class="pdot"></span>' + esc(pText) + '</button>';
+    var streamName = streamOf(t);
+    var stream = streamName
+      ? '<span class="stream" title="' + esc(streamName) + '"><span class="sq" style="background:' + streamColor(streamName) + '"></span><span class="lbl">' + esc(streamName) + '</span></span>'
       : '';
-    var rel = (t.related || []).slice(0, 2).map(function (r) { return '<span class="chip rel" title="' + esc(r) + '">' + esc(r) + '</span>'; }).join('');
-    var who = t.owner ? '<span class="avatar" title="' + esc(t.owner) + '">' + esc(initials(t.owner)) + '</span>' : '';
-    var cls = 'card' + (closed ? ' closed' : '') + (S.selected === t.path ? ' sel' : '') + (S.cursor === t.path ? ' cur' : '') +
-      (showPrio && t.priority ? ' p-' + t.priority.replace(/[^a-z0-9-]/gi, '') : '');
-    var strong = showPrio && t.priority === 'high' ? ' strong' : '';
+    var check = '<button type="button" class="check" data-action="toggle" aria-pressed="' + closed + '" aria-label="' +
+      (closed ? 'Riapri il task' : 'Segna come completato') + '">' + ICON.check + '</button>';
+    var person = t.owner
+      ? '<span class="person" title="' + esc(t.owner) + '"><span class="avatar">' + esc(initials(t.owner)) + '</span><span class="lbl">' + esc(t.owner) + '</span></span>'
+      : '';
+    var dueBtn = due
+      ? due.replace('<span class="chip date', '<button type="button" data-action="due-menu" aria-label="Scadenza: ' + esc(label) + '. Cambia" class="duebtn chip date').replace('</span>', '</button>')
+      : '<button type="button" class="duebtn empty" data-action="due-menu" aria-label="Aggiungi una scadenza" title="Aggiungi una scadenza">' + ICON.cal + '</button>';
+    var cls = 'card' + (closed ? ' closed' : '') + (S.selected === t.path ? ' sel' : '') + (S.cursor === t.path ? ' cur' : '');
     return '<article class="' + cls + '" draggable="true" data-path="' + esc(t.path) + '">' +
-      '<button type="button" class="ttl' + strong + '" data-action="open" title="' + esc(t.title) + '">' + esc(t.title) + '</button>' +
-      '<div class="meta">' + prio + due + rel + '<span class="grow"></span>' + who + '</div>' +
-      '<div class="qa">' +
-      '<button type="button" data-action="toggle" aria-label="' + (closed ? 'Riapri il task' : 'Segna come fatto') + '">' + ICON.check + '</button>' +
-      '<button type="button" data-action="due-menu" aria-label="Cambia scadenza">' + ICON.cal + '</button>' +
-      '<button type="button" data-action="prio-cycle" aria-label="Cambia priorità">' + ICON.flag + '</button>' +
-      '</div></article>';
+      '<div class="row1">' + pill + stream + '<span class="grow"></span>' + check + '</div>' +
+      '<button type="button" class="ttl" data-action="open" title="' + esc(t.title) + '">' + esc(t.title) + '</button>' +
+      '<div class="meta">' + person + '<span class="grow"></span>' + dueBtn + '</div>' +
+      '</article>';
   }
 
   function presetLabel(c) {
@@ -532,10 +552,20 @@ select.sel.on{background-color:#E6DCCD}
     return next.then(function (value) { queued[path] -= 1; return value; }, function (err) { queued[path] -= 1; throw err; });
   }
 
-  function patch(path, set, note) {
+  // modifiche annullabili con Ctrl/Cmd+Z, la più recente in fondo; le note non si annullano
+  var history = [];
+  function inverse(before, set) {
+    var inv = {};
+    Object.keys(set).forEach(function (k) { inv[k] = k === 'related' ? (before.related || []) : (before[k] || null); });
+    return inv;
+  }
+
+  function patch(path, set, note, undoing) {
     var t = find(path);
     if (!t) return Promise.resolve();
     var before = JSON.parse(JSON.stringify(t));
+    var entry = set && !undoing ? { path: path, set: inverse(before, set) } : null;
+    if (entry) { history.push(entry); if (history.length > 50) history.shift(); }
     if (set) applyLocal(t, set);
     renderBoard();
     renderPanel(true);
@@ -544,14 +574,24 @@ select.sel.on{background-color:#E6DCCD}
       var etag = current ? current.etag : before.etag;
       return api('PATCH', '/api/tasks', { path: path, etag: etag, set: set || {}, note: note || null }).then(function (res) {
         replaceTask(path, res.task);
+        if (res.task.path !== path) history.forEach(function (h) { if (h.path === path) h.path = res.task.path; });
         if (S.selected === path) S.selected = res.task.path;
         if (S.cursor === path) S.cursor = res.task.path;
         if (!res.committed && S.snap.sync.git) toast('Salvato, ma il commit è in sospeso');
       }).catch(function (e) {
         replaceTask(path, before);
+        if (entry && history.indexOf(entry) >= 0) history.splice(history.indexOf(entry), 1);
         toast(e.status === 409 ? 'Il task è stato modificato altrove: ho ricaricato la board' : e.message, true);
       });
     }).then(function () { if (!queued[path]) return load(); });
+  }
+
+  function undo() {
+    var h = history.pop();
+    if (!h) { toast('Niente da annullare'); return; }
+    if (!find(h.path)) { toast('Il task non c\'è più: modifica non annullabile', true); return; }
+    toast('Modifica annullata');
+    patch(h.path, h.set, null, true);
   }
 
   function validYear(value) { var y = +String(value).slice(0, 4); return y >= 1900 && y <= 2999; }
@@ -805,6 +845,12 @@ select.sel.on{background-color:#E6DCCD}
       if (S.adding) { S.adding = null; renderBoard(); return; }
       if (typing) { e.target.blur(); return; }
       if (S.selected) { S.selected = null; renderBoard(); renderPanel(false); }
+      return;
+    }
+    // nei campi di testo Ctrl/Cmd+Z resta l'annulla nativo del campo
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'z' && !/INPUT|TEXTAREA/.test(tag) && $('modal').hidden && S.snap) {
+      e.preventDefault();
+      undo();
       return;
     }
     if (typing || e.metaKey || e.ctrlKey || e.altKey || !S.snap) return;

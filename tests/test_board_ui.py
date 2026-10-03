@@ -50,9 +50,24 @@ class BoardUiTest(unittest.TestCase):
             self.assertIn(prop, chip)
         self.assertIn("-webkit-line-clamp:3", self.css_rule(".ttl"))
 
-    def test_priority_is_prominent_outside_the_priority_view(self):
-        self.assertIn(".card.p-high::before", self.text)
-        self.assertIn("var showPrio = S.view !== 'priority';", self.text)
+    def test_card_follows_layout_b(self):
+        # priorità cliccabile in testa, stream accanto, check a destra, titolo grande, persona e scadenza in fondo
+        for marker in ('class="pill ', 'data-action="prio-cycle"', 'class="stream"', 'class="check"',
+                       'data-action="toggle"', 'class="person"', "function streamOf("):
+            self.assertIn(marker, self.text)
+        self.assertNotIn(".card.p-high::before", self.text)
+        self.assertIn("font-size:14px", self.css_rule(".ttl"))
+
+    def test_closed_cards_are_not_struck_through(self):
+        self.assertNotIn("line-through", self.text)
+
+    def test_only_three_statuses_are_labelled(self):
+        self.assertNotIn("doing:", self.text)
+        self.assertNotIn("In corso", self.text)
+
+    def test_undo_with_ctrl_z(self):
+        for marker in ("function undo()", "history.push(entry)", "e.key.toLowerCase() === 'z'", "patch(h.path, h.set, null, true)"):
+            self.assertIn(marker, self.text)
 
     @unittest.skipUnless(shutil.which("node"), "node non disponibile")
     def test_script_parses(self):

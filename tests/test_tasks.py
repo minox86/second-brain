@@ -13,7 +13,7 @@ FILES = {
     "operations/tasks/Mio scaduto.md": md(
         'type: task\ntitle: Mio scaduto\ndue: 2026-09-30\npriority: high\nrelated: ["[[Migrazione DB]]"]\ncreated: 2026-09-20'
     ),
-    "operations/tasks/Mio oggi.md": md("type: task\ntitle: Mio oggi\nstatus: doing\ndue: 2026-10-02"),
+    "operations/tasks/Mio oggi.md": md("type: task\ntitle: Mio oggi\nstatus: todo\ndue: 2026-10-02"),
     "operations/tasks/Mio senza data.md": md("type: task\ntitle: Mio senza data"),
     "operations/tasks/Delegato.md": md('type: task\ntitle: Delegato\nowner: "[[Luca Bianchi]]"\ndue: 2026-10-08\nstatus: blocked'),
     "operations/tasks/Chiuso.md": md("type: task\ntitle: Chiuso\nstatus: done\ndue: 2026-09-01"),

@@ -58,7 +58,7 @@ BASE_SCHEMA = {
     "schema/types/source-note.md": md("name: source-note\nlayer: knowledge\nfolder: knowledge/sources", "# Source note\n"),
     "schema/types/task.md": md(
         "name: task\nlayer: operations\nfolder: operations/tasks\nfields:\n"
-        "  status: {kind: enum, values: [todo, doing, blocked, done, dropped], closed: [done, dropped]}\n"
+        "  status: {kind: enum, values: [todo, blocked, done, dropped], closed: [done, dropped]}\n"
         "  owner: {kind: link, to: person}\n  due: {kind: date}\n"
         "  priority: {kind: enum, values: [low, medium, high]}\n  related: {kind: list, of: link}",
         "# Task\n",

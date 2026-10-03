@@ -10,13 +10,13 @@ python3 "$REPO/toolkit/sb.py" board --wiki "$WIKI"
 `SB` sta per `python3 "$REPO/toolkit/sb.py" --wiki "$WIKI"`. In un secondo terminale, nella cartella `$WIKI`, esegui le verifiche.
 
 ## B1 · Triage nelle tre viste
-1. Vista **Stato**: trascina "Preparare il budget Q4" in **In corso**.
+1. Vista **Stato**: trascina "Preparare il budget Q4" in **Bloccati**.
 2. Vista **Priorità** (`2`): trascina lo stesso task in **Media**.
 3. Vista **Persone** (`3`): trascina "Ricevere da Luca la stima della migrazione DB" in **Io**.
 
 Verifiche:
 - `git log --format=%s -3` mostra tre commit `sb(board): …`;
-- `SB tasks list --view all` riporta `status: doing` e `priority: medium` sul budget, e nessun owner sulla stima;
+- `SB tasks list --view all` riporta `status: blocked` e `priority: medium` sul budget, e nessun owner sulla stima;
 - `SB validate` esce con 0.
 
 ## B2 · Creazione rapida in colonna

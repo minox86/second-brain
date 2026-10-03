@@ -88,8 +88,8 @@ class ServerTest(WikiCase):
         self.assertEqual(sorted(results), [200, 409])
 
     def test_create_and_errors(self):
-        status, data = self.call("POST", "/api/tasks", {"title": "Nuovo", "status": "doing"})
-        self.assertEqual((status, data["task"]["status"]), (201, "doing"))
+        status, data = self.call("POST", "/api/tasks", {"title": "Nuovo", "status": "blocked"})
+        self.assertEqual((status, data["task"]["status"]), (201, "blocked"))
         status, data = self.call("POST", "/api/tasks", {"title": "Nuovo"})
         self.assertEqual((status, data["path"]), (409, "operations/tasks/Nuovo.md"))
         self.assertEqual(self.call("POST", "/api/tasks", {"title": "A: B"})[0], 422)

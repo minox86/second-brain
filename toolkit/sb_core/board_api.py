@@ -20,7 +20,7 @@ from .tasks import list_tasks, task_record
 from .validate import validate
 from .wiki import PAGE_ROOTS, Wiki, closed_statuses, parse_date
 
-DEFAULT_STATUS = ["todo", "doing", "blocked", "done", "dropped"]
+DEFAULT_STATUS = ["todo", "blocked", "done", "dropped"]
 DEFAULT_PRIORITY = ["low", "medium", "high"]
 EDITABLE = ("title", "status", "owner", "due", "priority", "related")
 FIELD_ORDER = ("status", "owner", "due", "priority", "related")

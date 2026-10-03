@@ -115,7 +115,7 @@ Riferimento visivo: la tavola, look "carta e terracotta".
 ### 3.6 Tastiera e aggiornamento
 
 - **Tastiera:**
-  - `j`/`k` card precedente e successiva, `Invio` apre il dettaglio, `x` chiudi o riapri;
+  - `j`/`k` card precedente e successiva, `Invio` apre il dettaglio, `x` chiudi o riapri, `Ctrl`/`Cmd`+`Z` annulla l'ultima modifica;
   - `n` nuovo, `/` cerca, `1`/`2`/`3` cambia vista, `Esc` chiude pannello o form.
   - I tasti sono gestiti sulla pagina e ignorati quando il focus è in un campo di testo.
 - **Aggiornamento:** polling di `GET /api/version` ogni 5 s. Se la versione cambia, la board ricarica lo snapshot mantenendo vista, filtri, ricerca e card selezionata.
