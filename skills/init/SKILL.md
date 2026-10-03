@@ -19,7 +19,7 @@ Argomenti: `$ARGUMENTS`. Contiene il percorso opzionale della nuova wiki; il def
 
 Una domanda per messaggio, preferibilmente a scelta multipla, con risposte brevi. Ogni 2–3 risposte riassumi ciò che hai capito. Gli argomenti, in quest'ordine:
 
-1. **Contesto**: azienda o unità, ruolo, perimetro (quanti team, quante persone).
+1. **Contesto**: azienda o unità, ruolo, perimetro (quanti team, quante persone), e il **nome** da dare alla wiki: compare in alto nella board. Il default è il nome della cartella.
 2. **Persone e team**: riporti diretti, team con i loro lead, il tuo manager, i peer chiave. Raccogli nomi e cognomi: diventeranno le prime pagine.
 3. **Ritmi**: cadenza dei 1:1, da cui ricavi `one_on_one_gap_days` (cadenza + circa il 50%); meeting ricorrenti importanti; rituali (planning, review, staff meeting).
 4. **Sorgenti esterne**: spazi Confluence e progetti Jira rilevanti. Per ciascuno chiedi la chiave, a cosa serve e ogni quanto cambia, da cui ricavi `stale_after_days`. Chiedi anche se usa mail e calendario. Verifica quali tool MCP (Atlassian, Microsoft 365) sono disponibili in questa sessione e dillo.
@@ -31,6 +31,7 @@ Una domanda per messaggio, preferibilmente a scelta multipla, con risposte brevi
 
 1. Crea una cartella temporanea (`mktemp -d`) e copia il preset: `cp -R "PRESET" "<tmp>/schema"`.
 2. Modifica la copia secondo le risposte:
+   - `wiki.md`: crealo con il frontmatter `name: <nome scelto>` (più una riga di prosa) se l'utente ha dato un nome diverso da quello della cartella;
    - `layers.md`: le soglie;
    - `sources.md`: una voce di frontmatter per sorgente (`<id>: {system: …, scope: <CHIAVE>, covers: [tipi], stale_after_days: N}`) e una sezione di prosa per ciascuna;
    - `types/*.md`: rinomina, aggiungi o togli tipi; adatta la prosa al contesto reale (nomi dei team, rituali). Un tipo nuovo segue lo stesso formato degli altri: frontmatter `name`, `layer`, `folder` (= `<layer>/<plurale>`), `fields`, `required`, poi la prosa con **Crea**, **Non creare** e **Struttura del corpo**;

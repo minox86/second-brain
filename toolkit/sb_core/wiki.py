@@ -159,6 +159,19 @@ def _load_thresholds(schema_dir):
     return thresholds
 
 
+def _load_name(schema_dir, default):
+    """Nome della wiki da schema/wiki.md (campo `name`); senza, il nome della cartella."""
+    path = schema_dir / "wiki.md"
+    if not path.is_file():
+        return default
+    name = _read_meta(path).get("name")
+    if name is None:
+        return default
+    if not isinstance(name, str):
+        raise WikiError("schema/wiki.md: 'name' deve essere un testo")
+    return " ".join(name.split()) or default
+
+
 def _load_sources(schema_dir):
     path = schema_dir / "sources.md"
     if not path.is_file():
@@ -187,6 +200,7 @@ class Wiki(object):
         self.types = load_types(schema_dir)
         self.thresholds = _load_thresholds(schema_dir)
         self.sources = _load_sources(schema_dir)
+        self.name = _load_name(schema_dir, self.root.name)
         self.invalidate()
 
     def invalidate(self):

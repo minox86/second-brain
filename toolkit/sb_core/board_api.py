@@ -97,7 +97,7 @@ class Board(object):
         wiki = self.refresh()
         today = self.today()
         return {
-            "wiki": {"name": self.root.name, "root": str(self.root)},
+            "wiki": {"name": wiki.name, "root": str(self.root)},
             "today": today.isoformat(),
             "thresholds": dict(wiki.thresholds),
             "enums": self.enums(wiki),

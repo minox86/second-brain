@@ -81,10 +81,14 @@ def _wiki_path(args):
 
 def cmd_version(args):
     try:
-        root = str(find_root(_wiki_path(args)))
+        wiki = Wiki(_wiki_path(args))
+        root, name = str(wiki.root), wiki.name
     except SbError:
-        root = None
-    return {"toolkit": __version__, "format": FORMAT_VERSION, "wiki": root}, 0
+        try:
+            root, name = str(find_root(_wiki_path(args))), None
+        except SbError:
+            root, name = None, None
+    return {"toolkit": __version__, "format": FORMAT_VERSION, "wiki": root, "name": name}, 0
 
 
 def _wiki(args):

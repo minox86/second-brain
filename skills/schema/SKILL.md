@@ -1,7 +1,7 @@
 ---
 name: schema
 description: Mostra e fa evolvere lo schema della wiki Second Brain (elenca i tipi, presenta le proposte raccolte, aggiunge o modifica tipi e campi, applica migrazioni sulle pagine esistenti). Usa per "aggiungi un tipo vendor", "lo schema va cambiato", "che proposte di schema ci sono?".
-argument-hint: "[proposals | add <tipo> | change <tipo> <modifica> | apply <id>]"
+argument-hint: "[name <nome> | proposals | add <tipo> | change <tipo> <modifica> | apply <id>]"
 ---
 
 # /sb:schema: evoluzione dello schema
@@ -18,6 +18,14 @@ Lo schema sta in `schema/`. I tipi `task` e `source-note` non si eliminano e non
 
 1. Per ogni layer elenca i tipi, con il numero di pagine (da `index.md`) e i campi principali.
 2. Riporta il numero di proposte aperte, cioè le righe `- [ ]` in `schema/proposals.md`.
+
+## `name <nuovo nome>`
+
+Cambia il nome della wiki, quello mostrato dalla board e da `SB version`:
+1. scrivi o aggiorna `schema/wiki.md` con il frontmatter `name: <nuovo nome>`;
+2. esegui il flusso standard con `--op schema`.
+
+Togliendo il campo, il nome torna a essere quello della cartella. Non serve nessuna migrazione.
 
 ## `proposals`
 

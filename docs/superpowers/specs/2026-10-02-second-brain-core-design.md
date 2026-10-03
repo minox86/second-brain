@@ -74,6 +74,7 @@ Le skill si invocano come `/sb:<skill>`.
 ├── CLAUDE.md                  # marca la cartella come wiki; regole e puntatori
 ├── schema/
 │   ├── VERSION                # versione del formato
+│   ├── wiki.md                # opzionale: `name` della wiki (default: nome della cartella)
 │   ├── layers.md              # semantica dei layer
 │   ├── sources.md             # registro delle KB esterne
 │   ├── proposals.md           # proposte di evoluzione: una checklist `- [ ] P<n> · …`

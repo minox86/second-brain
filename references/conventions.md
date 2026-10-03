@@ -8,7 +8,7 @@ Ogni skill del plugin legge questo file prima di agire. BASE è la *base directo
 
 - Ogni comando stampa JSON su stdout. Exit `0` = ok; `1` = problemi trovati, descritti nel JSON; `2` = errore d'uso o d'ambiente (leggi il campo `error`).
 - Si lancia dalla radice della wiki o da una sua sottocartella. Altrimenti si passa `--wiki <cartella>`.
-- `SB version` ritorna `wiki`: il percorso della wiki corrente, oppure `null` se non sei in una wiki. In quel caso, per ogni comando tranne `init`, fermati e proponi `/sb:init`.
+- `SB version` ritorna `name` (il nome della wiki, da `schema/wiki.md`, altrimenti il nome della cartella) e `wiki`: il percorso della wiki corrente, oppure `null` se non sei in una wiki. In quel caso, per ogni comando tranne `init`, fermati e proponi `/sb:init`.
 - Non rifare a mano ciò che fa il toolkit: validazione, indice, risoluzione dei nomi, query sui task, sorgenti stantie, lint strutturale, migrazioni, log.
 
 | Comando | Uso |
