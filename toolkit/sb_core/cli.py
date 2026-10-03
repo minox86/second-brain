@@ -8,6 +8,7 @@ import traceback
 from collections import Counter
 
 from . import FORMAT_VERSION, __version__
+from . import board_agent
 from .board_api import Board
 from .board_server import run as run_board
 from .errors import SbError, UsageError
@@ -272,12 +273,18 @@ def cmd_tasks_update(args):
 
 def _add_board(sub, common):
     p = sub.add_parser("board", parents=[common], help="avvia la board dei task nel browser")
-    p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--port", type=int, default=None, help="default: l'ultima usata, poi 8765")
     p.add_argument("--no-open", action="store_true", help="non aprire il browser")
+    agent = p.add_mutually_exclusive_group()
+    agent.add_argument("--install", action="store_true", help="macOS: tiene la board sempre accesa (LaunchAgent)")
+    agent.add_argument("--uninstall", action="store_true", help="macOS: rimuove il LaunchAgent della board")
     p.set_defaults(handler=cmd_board)
 
 
 def cmd_board(args):
+    if args.install or args.uninstall:
+        root = _wiki(args).root
+        return (board_agent.install(root) if args.install else board_agent.uninstall(root)), 0
     board = _board(args)
     return run_board(board, port=args.port, open_browser=not args.no_open), 0
 

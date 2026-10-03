@@ -11,7 +11,7 @@ import urllib.request
 
 from helpers import ROOT, WikiCase, md
 from sb_core.board_api import Board, etag_of
-from sb_core.board_server import STATE_FILE, running_board, start
+from sb_core.board_server import KEY_FILE, STATE_FILE, load_key, running_board, start
 
 TODAY = datetime.date(2026, 10, 2)
 T = "operations/tasks/Stima.md"
@@ -133,6 +133,44 @@ class LifecycleTest(WikiCase):
         proc.send_signal(signal.SIGTERM)
         self.assertEqual(proc.wait(timeout=30), 0)
         self.assertFalse((root / STATE_FILE).exists())
+
+    def test_url_survives_a_restart(self):
+        # il preferito nel browser deve continuare a funzionare dopo un riavvio
+        root = self.make_git_wiki(FILES)
+        urls = []
+        for _ in range(2):
+            proc = self.launch(root)
+            self.addCleanup(lambda p=proc: p.poll() is None and p.kill())
+            urls.append(json.loads(proc.stdout.readline())["url"])
+            proc.send_signal(signal.SIGTERM)
+            self.assertEqual(proc.wait(timeout=30), 0)
+        self.assertEqual(urls[0].split("?t=")[1], urls[1].split("?t=")[1])
+        self.assertEqual(oct((root / KEY_FILE).stat().st_mode & 0o777), "0o600")
+        self.assertNotIn("port", load_key(root))  # con --port 0 la porta non si ricorda
+
+    def test_saved_port_is_reused(self):
+        root = self.make_git_wiki(FILES)
+        (root / ".sb").mkdir(exist_ok=True)
+        probe = start(Board(root, today=lambda: TODAY), port=0)
+        free = probe.server_address[1]
+        probe.server_close()
+        (root / KEY_FILE).write_text(json.dumps({"token": "x" * 32, "port": free}), encoding="utf-8")
+        proc = subprocess.Popen(
+            [sys.executable, str(ROOT / "toolkit" / "sb.py"), "board", "--no-open", "--wiki", str(root)],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )
+        self.addCleanup(lambda: proc.poll() is None and proc.kill())
+        info = json.loads(proc.stdout.readline())
+        self.assertEqual(info["url"], f"http://127.0.0.1:{free}/?t={'x' * 32}")
+        self.assertNotIn("warning", info)
+        proc.send_signal(signal.SIGTERM)
+        self.assertEqual(proc.wait(timeout=30), 0)
+
+    def test_broken_key_file_is_ignored(self):
+        root = self.make_wiki(FILES)
+        (root / ".sb").mkdir(exist_ok=True)
+        (root / KEY_FILE).write_text('{"token": "corto", "port": "8765"}', encoding="utf-8")
+        self.assertEqual(load_key(root), {})
 
     def test_stale_state_file_is_ignored(self):
         root = self.make_wiki(FILES)

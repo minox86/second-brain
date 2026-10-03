@@ -17,6 +17,8 @@ from .errors import SbError, WikiError
 
 HTML_PATH = Path(__file__).resolve().parents[1] / "board" / "index.html"
 STATE_FILE = ".sb/board.json"
+KEY_FILE = ".sb/board-key.json"  # token e porta riusati a ogni avvio: l'URL resta valido nei preferiti
+DEFAULT_PORT = 8765
 MAX_BODY = 1_000_000
 
 
@@ -161,19 +163,51 @@ def _answers(info):
         return False
 
 
-def run(board, port=8765, open_browser=True, emit=None):
+def load_key(root):
+    try:
+        data = json.loads((Path(root) / KEY_FILE).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    key = {}
+    if isinstance(data.get("token"), str) and len(data["token"]) >= 16:
+        key["token"] = data["token"]
+    if isinstance(data.get("port"), int) and 0 < data["port"] < 65536:
+        key["port"] = data["port"]
+    return key
+
+
+def save_key(root, key):
+    path = Path(root) / KEY_FILE
+    path.parent.mkdir(exist_ok=True)
+    fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        json.dump(key, handle)
+
+
+def run(board, port=None, open_browser=True, emit=None):
     emit = emit or (lambda data: print(json.dumps(data, ensure_ascii=False), flush=True))
     existing = running_board(board.root)
     if existing:
         emit(dict(existing, already_running=True))
         return {"stopped": False, "url": existing.get("url")}
-    server = start(board, port)
+    key = load_key(board.root)
+    wanted = port if port is not None else key.get("port", DEFAULT_PORT)
+    server = start(board, wanted, key.get("token"))
+    actual = server.server_address[1]
+    key["token"] = server.app.token
+    if wanted != 0:  # con la porta 0 (test) non si ricorda nulla
+        key["port"] = actual
+    save_key(board.root, key)
     info = {
         "pid": os.getpid(),
-        "port": server.server_address[1],
+        "port": actual,
         "url": url_of(server),
         "started": datetime.datetime.now().isoformat(timespec="seconds"),
     }
+    if wanted not in (0, actual):
+        info["warning"] = f"porta {wanted} occupata: la board è sulla {actual}, aggiorna il preferito"
     state = board.root / STATE_FILE
     state.parent.mkdir(exist_ok=True)
     state.write_text(json.dumps(info), encoding="utf-8")
