@@ -1,7 +1,12 @@
 """Riunioni Teams: dal materiale scaricato via Microsoft 365 al grezzo in raw/."""
 import json
 import re
+import unicodedata
 from html.parser import HTMLParser
+from pathlib import Path
+
+from .errors import FrontmatterError
+from .frontmatter import parse, render
 
 _BLOCK_TAGS = {"p", "div", "br", "li", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "hr"}
 _SKIP_TAGS = {"style", "script", "head", "title"}
@@ -142,3 +147,107 @@ def transcript_text(payload):
         return None
     items.sort(key=lambda t: t.get("createdDateTime") or "")
     return "\n\n".join(t["content"] for t in items)
+
+
+_CANCELLED = re.compile(r"^\s*(annullat[ao]|cancell?ed)\s*:\s*", re.IGNORECASE)
+
+
+def slug_for(subject):
+    """Slug ASCII, minuscolo, a trattini, senza prefissi di annullamento; al massimo 60 caratteri."""
+    text = _CANCELLED.sub("", subject or "")
+    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii").lower()
+    slug = re.sub(r"[^a-z0-9]+", "-", text).strip("-")
+    slug = slug[:60].rstrip("-")
+    return slug or "riunione"
+
+
+def event_date(event):
+    return event["start"]["dateTime"][:10]
+
+
+def origin_for(event):
+    return f"teams:event/{event['id']}"
+
+
+def raw_path_for(root, event):
+    """raw/AAAA/MM/AAAA-MM-GG-<slug>.md; se esiste già, suffisso -2, -3…"""
+    date = event_date(event)
+    folder = Path(root) / "raw" / date[:4] / date[5:7]
+    stem = f"{date}-{slug_for(event.get('subject'))}"
+    path = folder / f"{stem}.md"
+    n = 2
+    while path.exists():
+        path = folder / f"{stem}-{n}.md"
+        n += 1
+    return path
+
+
+def _person(value):
+    if isinstance(value, dict):
+        return value.get("name") or value.get("address") or ""
+    return value or ""
+
+
+def _clock(stamp):
+    return (stamp or "")[11:16]
+
+
+def render_raw(event, transcript, chat, dictation, today):
+    """Markdown del grezzo: frontmatter, evento, chat, trascrizione intatta o dettato."""
+    meta = {
+        "kind": "transcript" if transcript else "dictation",
+        "captured": today.isoformat(),
+        "origin": origin_for(event),
+        "meeting_date": event_date(event),
+    }
+    seen_chat = attendance(chat or [])
+    start, end = event.get("start") or {}, event.get("end") or {}
+    when = f"{event_date(event)} {_clock(start.get('dateTime'))}–{_clock(end.get('dateTime'))}"
+    when += f" {start.get('timeZone') or 'UTC'}"
+    if seen_chat.get("duration"):
+        when += f" · durata effettiva {seen_chat['duration']}"
+    lines = [f"# {event.get('subject') or 'Riunione'}", "", "## Evento", f"- Orario: {when}"]
+    organizer = _person(event.get("organizer"))
+    if organizer:
+        lines.append(f"- Organizzatore: {organizer}")
+    invited = [p for p in (_person(a) for a in event.get("attendees") or []) if p]
+    if invited:
+        lines.append(f"- Invitati: {', '.join(invited)}")
+    if seen_chat.get("present"):
+        lines.append(f"- Presenti: {', '.join(seen_chat['present'])}")
+    if seen_chat.get("recording"):
+        lines.append(f"- Registrazione: {seen_chat['recording']}")
+    body_html = event["body"].get("content") if isinstance(event.get("body"), dict) else None
+    agenda = agenda_text(body_html)
+    if agenda:
+        lines += ["", "Agenda:", agenda]
+    if chat is None:
+        lines += ["", "## Chat", "_Chat non disponibile._"]
+    else:
+        messages = chat_lines(chat)
+        if messages:
+            lines += ["", "## Chat (orari UTC)"] + [f"- {m}" for m in messages]
+    if dictation and dictation.strip():
+        lines += ["", "## Dettato", dictation.strip()]
+    body = "\n".join(lines) + "\n"
+    if transcript:
+        body += "\n## Trascrizione\n" + transcript
+    return render(meta, body)
+
+
+def seen(root, ids):
+    """Riunioni già catturate: {id: percorso relativo del raw} per gli id trovati in raw/."""
+    wanted = {origin_for({"id": i}): i for i in ids}
+    found = {}
+    base = Path(root) / "raw"
+    if not wanted or not base.is_dir():
+        return found
+    for path in sorted(base.rglob("*.md")):
+        try:
+            meta, _ = parse(path.read_text(encoding="utf-8"))
+        except (UnicodeDecodeError, FrontmatterError):
+            continue
+        origin = (meta or {}).get("origin")
+        if origin in wanted:
+            found.setdefault(wanted[origin], path.relative_to(root).as_posix())
+    return found

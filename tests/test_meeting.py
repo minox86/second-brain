@@ -1,10 +1,12 @@
+import datetime
 import json
 import unittest
 
-from helpers import ROOT  # noqa: F401  (aggiunge toolkit/ al path)
+from helpers import ROOT, WikiCase  # noqa: F401  (aggiunge toolkit/ al path)
 
-from sb_core.meeting import (agenda_text, attendance, chat_lines, format_duration, html_to_text,
-                             transcript_text)
+from sb_core.frontmatter import parse
+from sb_core.meeting import (agenda_text, attendance, chat_lines, event_date, format_duration, html_to_text,
+                             origin_for, raw_path_for, render_raw, seen, slug_for, transcript_text)
 
 TEAMS_BLOCK = (
     "<div>________________________________________________________________________________</div>"
@@ -116,6 +118,112 @@ class TranscriptTest(unittest.TestCase):
 
     def test_transcript_text_accepts_json_string(self):
         self.assertEqual(transcript_text(json.dumps({"transcripts": [{"content": VTT}]})), VTT)
+
+
+EVENT = {
+    "id": "AAkALgAAA-EbQAA=",
+    "subject": "TouchX - Metering: come capiamo quando un'offerta è attiva?",
+    "body": {"contentType": "html", "content": "<div>Serve a decidere X.</div>" + TEAMS_BLOCK},
+    "organizer": {"name": "Emanuele Fabbiani", "address": "e.f@example.com"},
+    "attendees": [{"name": "Emanuele Fabbiani", "address": "e.f@example.com"},
+                  {"name": "Alberto Zitti", "address": "a.z@example.com"},
+                  {"name": "Mattia Minotti", "address": "m.m@example.com"}],
+    "start": {"dateTime": "2026-09-30T09:30:00.0000000", "timeZone": "UTC"},
+    "end": {"dateTime": "2026-09-30T10:00:00.0000000", "timeZone": "UTC"},
+}
+TODAY = datetime.date(2026, 10, 4)
+
+
+class SlugTest(unittest.TestCase):
+    def test_slug(self):
+        self.assertEqual(slug_for(EVENT["subject"]), "touchx-metering-come-capiamo-quando-un-offerta-e-attiva")
+        self.assertEqual(slug_for("Annullata: Weekly Platform"), "weekly-platform")
+        self.assertEqual(slug_for("Canceled: Sync"), "sync")
+        self.assertEqual(slug_for("???"), "riunione")
+        self.assertEqual(slug_for(None), "riunione")
+        long = slug_for("parola " * 30)
+        self.assertLessEqual(len(long), 60)
+        self.assertFalse(long.endswith("-"))
+
+    def test_event_date_and_origin(self):
+        self.assertEqual(event_date(EVENT), "2026-09-30")
+        self.assertEqual(origin_for(EVENT), "teams:event/AAkALgAAA-EbQAA=")
+
+
+class RawPathTest(WikiCase):
+    def test_path_and_collision(self):
+        root = self.make_wiki()
+        first = raw_path_for(root, EVENT)
+        self.assertEqual(first.relative_to(root).as_posix(),
+                         "raw/2026/09/2026-09-30-touchx-metering-come-capiamo-quando-un-offerta-e-attiva.md")
+        first.parent.mkdir(parents=True)
+        first.write_text("x", encoding="utf-8")
+        second = raw_path_for(root, EVENT)
+        self.assertTrue(second.name.endswith("-attiva-2.md"))
+
+
+class RenderTest(unittest.TestCase):
+    CHAT = [
+        {"messageType": "message", "from": "Elisa Giorgi", "createdDateTime": "2026-09-30T10:58:30Z",
+         "bodyPreview": "<p>https://ghe/repo</p>"},
+        {"messageType": "unknownFutureValue", "from": "Unknown", "createdDateTime": "2026-09-30T11:01:53Z",
+         "eventDetail": {"@odata.type": "#microsoft.graph.callEndedEventMessageDetail", "callDuration": "PT1H26M21S",
+                         "callParticipants": [user("Elisa Giorgi"), user("Alberto Zitti")]}},
+    ]
+
+    def test_full_render(self):
+        vtt = "WEBVTT\r\n\r\n00:00:03.448 --> 00:00:05.248\r\n<v Alberto Zitti>Ora mi torna.</v>\r\n"
+        text = render_raw(EVENT, vtt, self.CHAT, None, TODAY)
+        meta, body = parse(text)
+        self.assertEqual(meta, {"kind": "transcript", "captured": "2026-10-04",
+                                "origin": "teams:event/AAkALgAAA-EbQAA=", "meeting_date": "2026-09-30"})
+        self.assertIn("# TouchX - Metering: come capiamo quando un'offerta è attiva?\n", body)
+        self.assertIn("- Orario: 2026-09-30 09:30–10:00 UTC · durata effettiva 1h26\n", body)
+        self.assertIn("- Organizzatore: Emanuele Fabbiani\n", body)
+        self.assertIn("- Invitati: Emanuele Fabbiani, Alberto Zitti, Mattia Minotti\n", body)
+        self.assertIn("- Presenti: Elisa Giorgi, Alberto Zitti\n", body)
+        self.assertIn("Agenda:\nServe a decidere X.\n", body)
+        self.assertIn("## Chat (orari UTC)\n- 10:58 Elisa Giorgi: https://ghe/repo\n", body)
+        self.assertNotIn("Registrazione", body)
+        self.assertTrue(text.endswith("## Trascrizione\n" + vtt))
+
+    def test_dictation_render_and_missing_chat(self):
+        text = render_raw(EVENT, None, None, "  Abbiamo deciso Y.\n", TODAY)
+        meta, body = parse(text)
+        self.assertEqual(meta["kind"], "dictation")
+        self.assertIn("## Chat\n_Chat non disponibile._\n", body)
+        self.assertIn("## Dettato\nAbbiamo deciso Y.\n", body)
+        self.assertNotIn("## Trascrizione", body)
+
+    def test_empty_chat_section_is_omitted(self):
+        text = render_raw(EVENT, "WEBVTT\n", [], None, TODAY)
+        self.assertNotIn("## Chat", text)
+
+    def test_render_handles_search_shaped_event(self):
+        event = dict(EVENT, organizer="e.f@example.com", attendees=["e.f@example.com", "a.z@example.com"],
+                     body=None)
+        body = parse(render_raw(event, "WEBVTT\n", [], None, TODAY))[1]
+        self.assertIn("- Organizzatore: e.f@example.com\n", body)
+        self.assertIn("- Invitati: e.f@example.com, a.z@example.com\n", body)
+        self.assertNotIn("Agenda:", body)
+
+
+class SeenTest(WikiCase):
+    def test_seen(self):
+        root = self.make_wiki({
+            "raw/2026/09/a.md": "---\nkind: transcript\norigin: teams:event/ID1\n---\nx",
+            "raw/2026/09/b.md": "---\nkind: dictation\norigin: chat\n---\nx",
+        })
+        self.assertEqual(seen(root, ["ID1", "ID2"]), {"ID1": "raw/2026/09/a.md"})
+        self.assertEqual(seen(root, []), {})
+
+    def test_seen_skips_broken_files(self):
+        root = self.make_wiki({"raw/2026/09/rotto.md": "---\norigin: teams:event/ID1\n"})
+        (root / "raw/2026/09/bin.md").write_bytes(b"\xff\xfe\x00")
+        self.assertEqual(seen(root, ["ID1"]), {})
+
+    def test_seen_without_raw_folder(self):
+        self.assertEqual(seen(self.make_wiki(), ["ID1"]), {})
 
 
 if __name__ == "__main__":
