@@ -32,7 +32,7 @@ Crea (o clona vuota) una cartella per la wiki, aprici Claude Code ed esegui `/sb
 | `/sb:prep <target>` | Briefing per 1:1, riunione, persona, progetto |
 | `/sb:report <tipo>` | Sintesi: settimana, mese, rischi, carico, upward, delegati |
 | `/sb:tasks [vista \| azione]` | Vede e gestisce i task |
-| `/sb:board [stop \| status]` | Board kanban locale nel browser: viste Stato, Priorità, Persone |
+| `/sb:board [stop \| status]` | Board kanban locale nel browser: viste Priorità (default), Stato, Persone, Progetti |
 | `/sb:lint [--fix]` | Manutenzione |
 | `/sb:schema [azione]` | Evoluzione dello schema |
 

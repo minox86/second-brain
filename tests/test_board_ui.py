@@ -22,8 +22,12 @@ class BoardUiTest(unittest.TestCase):
         self.assertTrue(hosts <= {"fonts.googleapis.com", "fonts.gstatic.com", "www.w3.org"}, hosts)
 
     def test_views_quick_add_and_panel(self):
-        for marker in ('data-view="status"', 'data-view="priority"', 'data-view="people"', "Aggiungi task",
+        for marker in ('data-view="status"', 'data-view="priority"', 'data-view="people"', 'data-view="projects"', "Aggiungi task",
                        "draggable", "Aggiungi nota", "Comando per Claude", "Nuovo task"):
+            self.assertIn(marker, self.text)
+
+    def test_archive_button(self):
+        for marker in ('data-action="archive"', "Archivia tutti", "case 'archive': archiveClosed()", "function archiveClosed(", "api('POST', '/api/tasks/archive')"):
             self.assertIn(marker, self.text)
 
     def test_palette(self):
@@ -69,9 +73,23 @@ class BoardUiTest(unittest.TestCase):
         self.assertNotIn("Mostra chiusi", self.text)
         self.assertNotIn("showClosed", self.text)
 
-    def test_sorting_by_view(self):
-        self.assertIn("if (S.view === 'priority') {\n      var projects = ", self.text)
+    def test_sorting_is_by_priority_then_due_in_every_view(self):
         self.assertIn("return rank(a.priority) - rank(b.priority) || byDue(a, b)", self.text)
+        self.assertNotIn("if (S.view === 'priority') {\n      var projects = ", self.text)
+
+    def test_priority_is_the_default_view(self):
+        self.assertIn("view: store.get('view', 'priority')", self.text)
+        self.assertIn("if (VIEWS.indexOf(S.view) < 0) S.view = 'priority';", self.text)
+        self.assertIn('data-view="priority" aria-pressed="true"', self.text)
+        self.assertNotIn('data-view="status" aria-pressed="true"', self.text)
+
+    def test_projects_view_has_one_column_per_project_with_tasks(self):
+        for marker in ("var VIEWS = ['status', 'priority', 'people', 'projects'];", "S.view === 'projects'",
+                       "Progetti<kbd>4</kbd>", "key: 'j:' + pr", "'Senza progetto'", "function projectOf(",
+                       "if (col.field === 'project') {", "setView(VIEWS[+k - 1])"):
+            self.assertIn(marker, self.text)
+        # le colonne nascono solo dai progetti che hanno task aperti, non dall'elenco dei progetti
+        self.assertIn("open.forEach(function (t) { var pr = projectOf(t);", self.text)
 
     def test_closed_cards_are_not_struck_through(self):
         self.assertNotIn("line-through", self.text)
