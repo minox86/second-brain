@@ -80,11 +80,12 @@ class BoardUiTest(unittest.TestCase):
     def test_priority_is_the_default_view(self):
         self.assertIn("view: store.get('view', 'priority')", self.text)
         self.assertIn("if (VIEWS.indexOf(S.view) < 0) S.view = 'priority';", self.text)
-        self.assertIn('data-view="priority" aria-pressed="true"', self.text)
+        self.assertIn('data-view="priority" aria-pressed="true">Priorità<kbd>1</kbd>', self.text)
+        self.assertLess(self.text.index('data-view="priority"'), self.text.index('data-view="status"'))
         self.assertNotIn('data-view="status" aria-pressed="true"', self.text)
 
     def test_projects_view_has_one_column_per_project_with_tasks(self):
-        for marker in ("var VIEWS = ['status', 'priority', 'people', 'projects'];", "S.view === 'projects'",
+        for marker in ("var VIEWS = ['priority', 'status', 'people', 'projects'];", "S.view === 'projects'",
                        "Progetti<kbd>4</kbd>", "key: 'j:' + pr", "'Senza progetto'", "function projectOf(",
                        "if (col.field === 'project') {", "setView(VIEWS[+k - 1])"):
             self.assertIn(marker, self.text)

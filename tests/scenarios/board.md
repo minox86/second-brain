@@ -11,8 +11,8 @@ python3 "$REPO/toolkit/sb.py" board --wiki "$WIKI"
 
 ## B1 · Triage nelle quattro viste
 La board si apre sulla vista **Priorità**; i task di ogni colonna sono ordinati per scadenza.
-1. Vista **Stato** (`1`): trascina "Preparare il budget Q4" in **Bloccati**.
-2. Vista **Priorità** (`2`): trascina lo stesso task in **Media**.
+1. Vista **Priorità** (`1`): trascina "Preparare il budget Q4" in **Media**.
+2. Vista **Stato** (`2`): trascina lo stesso task in **Bloccati**.
 3. Vista **Persone** (`3`): trascina "Ricevere da Luca la stima della migrazione DB" in **Io**.
 4. Vista **Progetti** (`4`): c'è una colonna solo per i progetti con task aperti (più **Senza progetto** se serve); trascina il budget in un altro progetto.
 

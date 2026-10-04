@@ -169,8 +169,8 @@ select.sel.on{background-color:#E6DCCD}
   <header>
     <span class="brand" id="brand">Board</span>
     <nav class="seg" id="views" aria-label="Vista">
-      <button type="button" data-view="status" aria-pressed="false">Stato<kbd>1</kbd></button>
-      <button type="button" data-view="priority" aria-pressed="true">Priorità<kbd>2</kbd></button>
+      <button type="button" data-view="priority" aria-pressed="true">Priorità<kbd>1</kbd></button>
+      <button type="button" data-view="status" aria-pressed="false">Stato<kbd>2</kbd></button>
       <button type="button" data-view="people" aria-pressed="false">Persone<kbd>3</kbd></button>
       <button type="button" data-view="projects" aria-pressed="false">Progetti<kbd>4</kbd></button>
     </nav>
@@ -234,7 +234,7 @@ select.sel.on{background-color:#E6DCCD}
     snap: null, version: null, view: store.get('view', 'priority'), q: '', project: '', person: '', priority: '',
     selected: null, cursor: null, adding: null, editing: null, editDraft: '', stale: false, cols: {}, order: []
   };
-  var VIEWS = ['status', 'priority', 'people', 'projects'];
+  var VIEWS = ['priority', 'status', 'people', 'projects'];
   if (VIEWS.indexOf(S.view) < 0) S.view = 'priority';
 
   function $(id) { return document.getElementById(id); }
