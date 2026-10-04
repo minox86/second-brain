@@ -62,6 +62,10 @@ class BoardUiTest(unittest.TestCase):
         for marker in ('class="pill ', 'data-action="prio-cycle"', 'class="stream"', 'class="check"',
                        'data-action="toggle"', 'class="person"', "function streamOf("):
             self.assertIn(marker, self.text)
+
+    def test_card_stream_shows_only_the_project(self):
+        self.assertIn("function streamOf(t) { return projectOf(t); }", self.text)
+        self.assertNotIn("people.indexOf(r) < 0 && r !== t.owner", self.text)
         self.assertNotIn(".card.p-high::before", self.text)
         self.assertIn("font-size:14px", self.css_rule(".ttl"))
 

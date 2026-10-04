@@ -334,12 +334,8 @@ select.sel.on{background-color:#E6DCCD}
 
   // render
   var STREAM_COLORS = ['#B9862F', '#6F7F4E', '#8E6A7E', '#5E7F86', '#7D6F62', '#9A5B3F'];
-  function streamOf(t) {
-    var related = t.related || [];
-    var people = S.snap.people.map(function (p) { return p.title; });
-    return projectOf(t) ||
-      related.filter(function (r) { return people.indexOf(r) < 0 && r !== t.owner; })[0] || null;
-  }
+  // sulla card compare solo il progetto, non team, topic o sistemi collegati
+  function streamOf(t) { return projectOf(t); }
   function streamColor(name) {
     var h = 0;
     for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
