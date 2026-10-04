@@ -101,6 +101,17 @@ class UpdateTest(WikiCase):
         self.assertIn("Estraneo.md", git(self.root, "status", "--porcelain"))
         self.assertTrue(self.board.pusher.state()["pending_push"])
 
+    def test_archive_flags_closed_tasks_and_hides_them(self):
+        result = self.board.archive()
+        self.assertEqual(result, {"archived": 1, "committed": True})
+        text = read(self.root, "operations/tasks/Chiuso.md")
+        self.assertIn("archived: true", text)
+        self.assertIn("updated: 2026-10-02", text)
+        self.assertNotIn("archived", read(self.root, T))
+        self.assertEqual(self.committed_files(), sorted(["operations/tasks/Chiuso.md", "index.md", "log.md"]))
+        self.assertEqual([t["title"] for t in self.board.snapshot()["tasks"]], ["Stima"])
+        self.assertEqual(self.board.archive(), {"archived": 0, "committed": False})
+
     def test_null_removes_a_field(self):
         self.board.update({"path": T, "etag": self.etag(), "set": {"priority": None, "owner": None}})
         meta, _ = parse(read(self.root, T))

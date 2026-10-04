@@ -97,6 +97,10 @@ class ServerTest(WikiCase):
         self.assertEqual(self.call("POST", "/api/tasks", raw=b"non json")[0], 400)
         self.assertEqual(self.call("GET", "/api/altro")[0], 404)
 
+    def test_archive_endpoint(self):
+        status, data = self.call("POST", "/api/tasks/archive")
+        self.assertEqual((status, data["archived"]), (200, 0))
+
     def test_version_endpoint(self):
         status, data = self.call("GET", "/api/version")
         self.assertEqual(status, 200)

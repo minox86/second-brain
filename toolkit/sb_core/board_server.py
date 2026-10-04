@@ -89,6 +89,8 @@ class _Handler(BaseHTTPRequestHandler):
                 return self._send(200, board.version())
             if method == "POST" and route == "/api/tasks":
                 return self._send(201, board.create(self._json_body()))
+            if method == "POST" and route == "/api/tasks/archive":
+                return self._send(200, board.archive())
             if method == "PATCH" and route == "/api/tasks":
                 return self._send(200, board.update(self._json_body()))
             self._send(404, {"error": "non trovato"})

@@ -101,7 +101,8 @@ class Board(object):
             "today": today.isoformat(),
             "thresholds": dict(wiki.thresholds),
             "enums": self.enums(wiki),
-            "tasks": [self._decorate(wiki, r) for r in list_tasks(wiki, view="all", today=today)],
+            "tasks": [self._decorate(wiki, r) for r in list_tasks(wiki, view="all", today=today)
+                      if wiki.page(r["path"]).meta.get("archived") is not True],
             "people": self._pages_of(wiki, "person", active_only=True),
             "projects": self._pages_of(wiki, "project"),
             "sync": self.sync_state(),
@@ -234,6 +235,30 @@ class Board(object):
                 raise Invalid("la modifica non è valida", issues=errors)
             committed = self._close(sorted(touched), self._summary(page.title, fields, note, new_title))
             return {"task": self._record(rel), "committed": committed}
+
+    def archive(self):
+        """Segna `archived: true` su tutti i task chiusi non ancora archiviati, in un solo commit."""
+        with self.lock:
+            wiki = self.refresh()
+            closed = closed_statuses(wiki.types["task"])
+            targets = sorted(p.path for p in wiki.pages()
+                             if p.meta is not None and p.type == "task"
+                             and p.meta.get("status") in closed and p.meta.get("archived") is not True)
+            if not targets:
+                return {"archived": 0, "committed": False}
+            before = {(i.path, i.code, i.message) for i in validate(wiki, targets) if i.severity == "error"}
+            backup = {rel: (self.root / rel).read_bytes() for rel in targets}
+            today = self.today().isoformat()
+            for rel, data in backup.items():
+                text = update_text(data.decode("utf-8"), {"archived": True, "updated": today})
+                (self.root / rel).write_text(text, encoding="utf-8")
+            errors = [i.to_dict() for i in validate(self.refresh(), targets)
+                      if i.severity == "error" and (i.path, i.code, i.message) not in before]
+            if errors:
+                self._restore(backup, False)
+                raise Invalid("l'archiviazione non è valida", issues=errors)
+            committed = self._close(targets, f"archiviati {len(targets)} task chiusi")
+            return {"archived": len(targets), "committed": committed}
 
     def _normalize(self, wiki, fields):
         enums = self.enums(wiki)
