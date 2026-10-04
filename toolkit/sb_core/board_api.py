@@ -105,6 +105,7 @@ class Board(object):
                       if wiki.page(r["path"]).meta.get("archived") is not True],
             "people": self._pages_of(wiki, "person", active_only=True),
             "projects": self._pages_of(wiki, "project"),
+            "page_types": self._page_types(wiki),
             "sync": self.sync_state(),
         }
 
@@ -127,6 +128,14 @@ class Board(object):
         state.update(self.pusher.state())
         return state
 
+    def _page_types(self, wiki):
+        """Titolo -> tipo di ogni pagina: la board ne ricava icona ed etichetta dei collegati."""
+        types = {}
+        for page in wiki.pages():
+            if page.meta is not None and page.type:
+                types.setdefault(page.title, page.type)
+        return types
+
     def _pages_of(self, wiki, type_name, active_only=False):
         typedef = wiki.types.get(type_name)
         if typedef is None:
@@ -147,6 +156,8 @@ class Board(object):
         record = dict(record)
         record["body"] = page.body if page else ""
         record["updated"] = _iso((page.meta or {}).get("updated")) if page else None
+        sources = (page.meta or {}).get("sources") if page else None
+        record["sources"] = [x for x in sources if isinstance(x, str)] if isinstance(sources, list) else []
         record["etag"] = etag_of((self.root / record["path"]).read_bytes())
         return record
 

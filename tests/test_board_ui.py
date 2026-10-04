@@ -63,6 +63,26 @@ class BoardUiTest(unittest.TestCase):
                        'data-action="toggle"', 'class="person"', "function streamOf("):
             self.assertIn(marker, self.text)
 
+    def test_panel_follows_option_a(self):
+        # testata con badge e titolo a capo, campi con icona, contesto per tipo, descrizione e cronologia separate, fonti
+        for marker in ('class="tbadge"', '<textarea id="p-title" class="p-title" data-field="title"', 'class="facts"',
+                       "fact('p-status', 'Stato'", "fact('p-prio', 'Priorità'", "fact('p-due', 'Scadenza'", "fact('p-owner'",
+                       "<h3>Contesto</h3>", 'class="ctx-l"', "function relChip(", "<h3>Descrizione</h3>", "<h3>Cronologia</h3>",
+                       "<h3>Fonti</h3>", "function splitBody(", "function inline(", "function pageType(", "S.snap.page_types"):
+            self.assertIn(marker, self.text)
+        self.assertNotIn('class="p-fields"', self.text)
+        # la textarea del titolo si misura da visibile, altrimenti resta alta zero
+        self.assertIn("panel.hidden = false;\n    autosize($('p-title'));", self.text)
+
+    def test_click_outside_closes_the_panel(self):
+        self.assertIn("if (S.selected && !e.target.closest('#panel, .card, #menu, #modal')", self.text)
+
+    def test_page_types_share_icon_and_colour(self):
+        for t in ("project", "team", "person", "task", "decision", "risk", "meeting", "'one-on-one'", "goal", "idea",
+                  "system", "topic", "process", "vendor", "'source-note'", "other"):
+            self.assertIn(t + ": { one: '", self.text)
+        self.assertIn("var TYPE_ORDER = Object.keys(TYPE);", self.text)
+
     def test_card_stream_shows_only_the_project(self):
         self.assertIn("function streamOf(t) { return projectOf(t); }", self.text)
         self.assertNotIn("people.indexOf(r) < 0 && r !== t.owner", self.text)

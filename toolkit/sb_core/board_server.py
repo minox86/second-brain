@@ -213,7 +213,6 @@ def run(board, port=None, open_browser=True, emit=None):
     state = board.root / STATE_FILE
     state.parent.mkdir(exist_ok=True)
     state.write_text(json.dumps(info), encoding="utf-8")
-    emit(info)
 
     stop = threading.Event()
 
@@ -224,9 +223,11 @@ def run(board, port=None, open_browser=True, emit=None):
     def on_signal(signum, frame):
         threading.Thread(target=server.shutdown, daemon=True).start()
 
-    threading.Thread(target=push_loop, daemon=True).start()
+    # i gestori vanno installati prima di annunciare l'URL: chi lo legge può fermarci subito
     signal.signal(signal.SIGTERM, on_signal)
     signal.signal(signal.SIGINT, on_signal)
+    threading.Thread(target=push_loop, daemon=True).start()
+    emit(info)
     if open_browser:
         webbrowser.open(info["url"])
     try:

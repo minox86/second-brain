@@ -33,7 +33,11 @@ class SnapshotTest(WikiCase):
     def test_snapshot_shape(self):
         root = self.make_wiki(FILES)
         snap = Board(root, today=lambda: TODAY).snapshot()
-        self.assertEqual(set(snap), {"wiki", "today", "thresholds", "enums", "tasks", "people", "projects", "sync"})
+        self.assertEqual(set(snap), {"wiki", "today", "thresholds", "enums", "tasks", "people", "projects", "page_types", "sync"})
+        # titolo -> tipo di ogni pagina, cosi' la board sa cos'e' un collegato
+        self.assertEqual(snap["page_types"]["Migrazione DB"], "project")
+        self.assertEqual(snap["page_types"]["Luca Bianchi"], "person")
+        self.assertTrue(all("sources" in t and isinstance(t["sources"], list) for t in snap["tasks"]))
         self.assertEqual(snap["wiki"]["name"], root.resolve().name)
         self.assertEqual(snap["today"], "2026-10-02")
         self.assertEqual(snap["thresholds"]["due_soon_days"], 7)
