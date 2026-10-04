@@ -20,6 +20,8 @@ Ogni skill del plugin legge questo file prima di agire. BASE è la *base directo
 | `SB tasks add --title T [--owner …] [--due …] [--priority …] [--status …] [--related …]… [--note …]` | Crea un task con campi espliciti; valida, logga e fa commit da solo |
 | `SB tasks update <path> [--set campo=valore]… [--unset campo]… [--note …]` | Modifica un task; valida, logga e fa commit da solo |
 | `SB board [--port N] [--no-open]` | Avvia la board dei task nel browser |
+| `SB meeting capture --event F [--transcript F] [--chat F] [--dictation F]` | Scrive il grezzo di una riunione Teams in `raw/`, trascrizione intatta; rifiuta una riunione già catturata |
+| `SB meeting seen <id>…` | Dice quali eventi del calendario sono già stati catturati |
 | `SB sources stale` | Elenca le source-note da riallineare |
 | `SB lint` | Esegue i controlli strutturali |
 | `SB status` | Raccoglie i dati del cruscotto |

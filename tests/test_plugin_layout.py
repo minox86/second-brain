@@ -44,7 +44,7 @@ class SkillsTest(unittest.TestCase):
     def test_all_commands_present(self):
         names = {p.parent.name for p in SKILLS_DIR.glob("*/SKILL.md")}
         self.assertEqual(names, {"init", "status", "put", "sync", "ask", "prep", "report", "tasks", "lint", "schema",
-                                 "board"})
+                                 "board", "meeting"})
 
     def test_tasks_skill_uses_deterministic_commands(self):
         text = (SKILLS_DIR / "tasks" / "SKILL.md").read_text(encoding="utf-8")
@@ -54,6 +54,12 @@ class SkillsTest(unittest.TestCase):
     def test_board_skill_controls_the_server(self):
         text = (SKILLS_DIR / "board" / "SKILL.md").read_text(encoding="utf-8")
         for marker in ("SB board", ".sb/board.json", "SIGTERM", "run_in_background"):
+            self.assertIn(marker, text)
+
+    def test_meeting_skill_uses_toolkit_and_put(self):
+        text = (SKILLS_DIR / "meeting" / "SKILL.md").read_text(encoding="utf-8")
+        for marker in ("SB meeting capture", "SB meeting seen", "afterDateTime", "meetingTranscriptUrl",
+                       "skills/put/SKILL.md", ".sb/tmp/", "--op meeting"):
             self.assertIn(marker, text)
 
 

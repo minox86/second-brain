@@ -9,6 +9,7 @@ from collections import Counter
 
 from . import FORMAT_VERSION, __version__
 from . import board_agent
+from . import meeting
 from .board_api import Board
 from .board_server import run as run_board
 from .errors import SbError, UsageError
@@ -293,4 +294,70 @@ def cmd_board(args):
     return run_board(board, port=args.port, open_browser=not args.no_open), 0
 
 
-COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks, _add_sources, _add_log, _add_lint, _add_status, _add_migrate, _add_scaffold, _add_board]
+def _add_meeting(sub, common):
+    p = sub.add_parser("meeting", help="riunioni Teams: cattura in raw/")
+    msub = p.add_subparsers(dest="meeting_command", metavar="<azione>")
+    msub.required = True
+    cp = msub.add_parser("capture", parents=[common], help="scrive il grezzo di una riunione")
+    cp.add_argument("--event", required=True, help="JSON dell'evento (read_resource calendar:///events/…)")
+    cp.add_argument("--transcript", help="risposta MCP della trascrizione, o un WEBVTT")
+    cp.add_argument("--chat", help="JSON: lista dei messaggi della chat della riunione")
+    cp.add_argument("--dictation", help="file di testo con il dettato dell'utente")
+    cp.set_defaults(handler=cmd_meeting_capture)
+    sp = msub.add_parser("seen", parents=[common], help="riunioni già catturate")
+    sp.add_argument("ids", nargs="*", help="id degli eventi")
+    sp.set_defaults(handler=cmd_meeting_seen)
+
+
+def _read_exact(path):
+    """Legge un file senza tradurre i newline: la trascrizione resta byte per byte."""
+    try:
+        with open(path, encoding="utf-8", newline="") as handle:
+            return handle.read()
+    except OSError as exc:
+        raise UsageError(f"impossibile leggere {path}: {exc.strerror}")
+
+
+def _read_json(path, what):
+    try:
+        return json.loads(_read_exact(path))
+    except ValueError:
+        raise UsageError(f"{what}: {path} non è JSON valido")
+
+
+def cmd_meeting_capture(args):
+    wiki = _wiki(args)
+    event = _read_json(args.event, "evento")
+    if not isinstance(event, dict) or not event.get("id") or not (event.get("start") or {}).get("dateTime"):
+        raise UsageError("evento: servono almeno 'id' e 'start.dateTime'")
+    transcript = None
+    if args.transcript:
+        try:
+            transcript = meeting.transcript_text(_read_exact(args.transcript))
+        except ValueError as exc:
+            raise UsageError(f"trascrizione: {args.transcript} non è una risposta MCP valida né un WEBVTT ({exc})")
+    dictation = _read_exact(args.dictation) if args.dictation else None
+    if not transcript and not (dictation and dictation.strip()):
+        raise UsageError("nessun contenuto: serve una trascrizione non vuota o --dictation")
+    chat = None
+    if args.chat:
+        chat = _read_json(args.chat, "chat")
+        if not isinstance(chat, list):
+            raise UsageError("chat: serve una lista di messaggi")
+    already = meeting.seen(wiki.root, [event["id"]])
+    if already:
+        return {"ok": False, "error": "already-captured", "path": already[event["id"]]}, 1
+    path = meeting.raw_path_for(wiki.root, event)
+    text = meeting.render_raw(event, transcript, chat, dictation, _today(args))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="") as handle:
+        handle.write(text)
+    kind = "transcript" if transcript else "dictation"
+    return {"ok": True, "path": path.relative_to(wiki.root).as_posix(), "kind": kind}, 0
+
+
+def cmd_meeting_seen(args):
+    return {"seen": meeting.seen(_wiki(args).root, args.ids)}, 0
+
+
+COMMANDS = [_add_version, _add_validate, _add_index, _add_resolve, _add_tasks, _add_sources, _add_log, _add_lint, _add_status, _add_migrate, _add_scaffold, _add_board, _add_meeting]

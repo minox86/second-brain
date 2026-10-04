@@ -27,6 +27,7 @@ Crea (o clona vuota) una cartella per la wiki, aprici Claude Code ed esegui `/sb
 |---|---|
 | `/sb:status` | Cruscotto: cosa richiede attenzione |
 | `/sb:put <input>` | Fa entrare testo, file, Confluence, Jira, mail, web |
+| `/sb:meeting [oggi \| ultima \| <link> \| <nome>]` | Fa entrare riunioni Teams: trascrizione, chat, partecipanti |
 | `/sb:sync [sorgente] [--check]` | Riallinea le sorgenti esterne cambiate |
 | `/sb:ask <domanda>` | Risposta puntuale con citazioni |
 | `/sb:prep <target>` | Briefing per 1:1, riunione, persona, progetto |
