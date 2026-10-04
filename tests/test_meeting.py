@@ -222,6 +222,13 @@ class SeenTest(WikiCase):
         (root / "raw/2026/09/bin.md").write_bytes(b"\xff\xfe\x00")
         self.assertEqual(seen(root, ["ID1"]), {})
 
+    def test_seen_ignores_non_string_origin(self):
+        root = self.make_wiki({
+            "raw/2026/09/lista.md": "---\norigin: [a, b]\n---\nx",
+            "raw/2026/09/a.md": "---\norigin: teams:event/ID1\n---\nx",
+        })
+        self.assertEqual(seen(root, ["ID1"]), {"ID1": "raw/2026/09/a.md"})
+
     def test_seen_without_raw_folder(self):
         self.assertEqual(seen(self.make_wiki(), ["ID1"]), {})
 

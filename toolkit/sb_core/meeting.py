@@ -132,19 +132,33 @@ def attendance(messages):
     return result
 
 
+def _is_webvtt(text):
+    return text.lstrip("﻿ \t\r\n").startswith("WEBVTT")
+
+
 def transcript_text(payload):
-    """Il WEBVTT della riunione. Accetta la risposta MCP (dict o stringa JSON) o un VTT già estratto."""
+    """Il WEBVTT della riunione. Accetta la risposta MCP (dict o stringa JSON) o un VTT già estratto.
+
+    Solleva ValueError se il contenuto non è riconoscibile come trascrizione: un grezzo sbagliato
+    resterebbe per sempre in raw/ e bloccherebbe una nuova cattura."""
     if payload is None:
         return None
     if isinstance(payload, str):
         if not payload.strip():
             return None
         if not payload.lstrip().startswith("{"):
+            if not _is_webvtt(payload):
+                raise ValueError("non è un WEBVTT")
             return payload
         payload = json.loads(payload)
-    items = [t for t in payload.get("transcripts") or [] if t.get("content")]
+    transcripts = payload.get("transcripts") if isinstance(payload, dict) else None
+    if transcripts is not None and not isinstance(transcripts, list):
+        raise ValueError("'transcripts' non è una lista")
+    items = [t for t in transcripts or [] if isinstance(t, dict) and t.get("content")]
     if not items:
         return None
+    if not all(isinstance(t["content"], str) and _is_webvtt(t["content"]) for t in items):
+        raise ValueError("il contenuto non è un WEBVTT")
     items.sort(key=lambda t: t.get("createdDateTime") or "")
     return "\n\n".join(t["content"] for t in items)
 
@@ -248,6 +262,6 @@ def seen(root, ids):
         except (UnicodeDecodeError, FrontmatterError):
             continue
         origin = (meta or {}).get("origin")
-        if origin in wanted:
+        if isinstance(origin, str) and origin in wanted:
             found.setdefault(wanted[origin], path.relative_to(root).as_posix())
     return found

@@ -73,6 +73,23 @@ class MeetingCliTest(WikiCase):
         self.assertEqual(code, 2)
         self.assertIn("--dictation", data["error"])
 
+    def test_capture_malformed_transcript_json_is_usage_error(self):
+        for content in ('{"transcripts": [', '{"transcripts": "abc"}'):
+            with self.subTest(content=content):
+                code, data, err = self.capture("--transcript", self.write("t.json", content))
+                self.assertEqual(code, 2)
+                self.assertIn("trascrizione", data["error"])
+                self.assertNotIn("errore interno", data["error"])
+
+    def test_capture_rejects_transcript_that_is_not_webvtt(self):
+        wrapped = json.dumps([{"type": "text", "text": json.dumps({"transcripts": [{"content": VTT}]})}])
+        for content in (wrapped, "Error: resource not found"):
+            with self.subTest(content=content[:20]):
+                code, data, _ = self.capture("--transcript", self.write("t.txt", content))
+                self.assertEqual(code, 2)
+                self.assertIn("trascrizione", data["error"])
+        self.assertFalse((self.root / "raw").exists())
+
     def test_capture_bad_event(self):
         bad = self.write("bad.json", "{non json")
         code, data, _ = run_cli("meeting", "capture", "--wiki", self.root, "--event", bad,

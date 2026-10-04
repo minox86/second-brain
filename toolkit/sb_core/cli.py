@@ -330,7 +330,12 @@ def cmd_meeting_capture(args):
     event = _read_json(args.event, "evento")
     if not isinstance(event, dict) or not event.get("id") or not (event.get("start") or {}).get("dateTime"):
         raise UsageError("evento: servono almeno 'id' e 'start.dateTime'")
-    transcript = meeting.transcript_text(_read_exact(args.transcript)) if args.transcript else None
+    transcript = None
+    if args.transcript:
+        try:
+            transcript = meeting.transcript_text(_read_exact(args.transcript))
+        except ValueError as exc:
+            raise UsageError(f"trascrizione: {args.transcript} non è una risposta MCP valida né un WEBVTT ({exc})")
     dictation = _read_exact(args.dictation) if args.dictation else None
     if not transcript and not (dictation and dictation.strip()):
         raise UsageError("nessun contenuto: serve una trascrizione non vuota o --dictation")
