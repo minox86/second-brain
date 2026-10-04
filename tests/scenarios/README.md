@@ -89,3 +89,18 @@ Verifiche:
 - `SB validate --wiki "$T"` → exit 0;
 - esistono `schema/types/task.md`, `CLAUDE.md` e le pagine seed delle persone indicate;
 - `git -C "$T" log -1 --format=%s` inizia con `sb(init):`.
+
+## S9 · `/sb:meeting` (richiede il connettore Microsoft 365 e un calendario reale)
+
+Comandi, uno per volta:
+- `/sb:meeting` → la lista di oggi esclude annullate, blocchi orari e pause; le riunioni già catturate compaiono come non selezionabili.
+- `/sb:meeting <link teams.microsoft.com/meet/… di una riunione trascritta>`.
+- "aggiungi la riunione appena finita" → chiede conferma con oggetto e orario prima di procedere.
+- `/sb:meeting <nome di una riunione senza trascrizione>` → chiede il dettato; "salta" la esclude.
+
+Verifiche:
+- `ls raw/<anno>/<mese>/` → un grezzo per riunione con `origin: teams:event/…`; la sezione `## Trascrizione` contiene il WEBVTT;
+- `SB meeting seen <id>` → restituisce il percorso del grezzo; un secondo `/sb:meeting` sulla stessa riunione la segnala come già catturata;
+- `SB validate` → exit 0; esiste la pagina `meeting` o `one-on-one` con `## Note` vuota;
+- `ls .sb/tmp/` → nessun file `meeting-*`;
+- `git log -1 --format=%s` inizia con `sb(meeting):` e `git status --porcelain` è vuoto.
